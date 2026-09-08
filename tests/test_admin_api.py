@@ -2,14 +2,14 @@
 # 后端八股网站：xiaolincoding.com
 # Agent网站：xiaolinnote.com
 # 简历模版：jianli.xiaolinnote.com
-"""后台首页聚合 API:六张卡齐出,某一块依赖没起只让它自己那张卡显示读数失败,不连坐整页。"""
+"""后台首页聚合 API:全部模块卡齐出,某一块依赖没起只让它自己显示失败。"""
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.api import admin as admin_api
 
-CARDS = ("kb", "rageval", "review", "observability", "topics", "classifier")
+CARDS = ("kb", "rageval", "agent_eval", "review", "observability", "topics", "classifier")
 
 
 @pytest.fixture

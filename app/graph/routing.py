@@ -3,6 +3,7 @@
 # Agent网站：xiaolinnote.com
 # 简历模版：jianli.xiaolinnote.com
 from langchain_core.messages import AIMessage
+from langchain_core.messages import HumanMessage
 
 from app.config import settings
 
@@ -23,7 +24,34 @@ INTENT_TO_ROUTE: dict[str, str] = {
 
 def route_by_intent(state) -> str:
     """按意图分流;未知意图保守归 business(让 Agent 自己应对)。"""
-    return INTENT_TO_ROUTE.get(state.get("intent", ""), "business")
+    intent = state.get("intent", "")
+    if intent == "商品咨询" and is_product_lookup(_query_text(state)):
+        return "business"
+    return INTENT_TO_ROUTE.get(intent, "business")
+
+
+_PRODUCT_LOOKUP_WORDS = (
+    "有货", "有没有", "还有货", "库存", "现货", "缺货", "补货",
+    "卖不卖", "是否售卖", "在售", "多少钱", "价格", "售价", "能买吗", "买得到",
+)
+
+
+def _query_text(state) -> str:
+    resolved = state.get("resolved_query")
+    if isinstance(resolved, str) and resolved.strip():
+        return resolved.strip()
+    for message in reversed(state.get("messages", [])):
+        if isinstance(message, HumanMessage) and isinstance(message.content, str):
+            return message.content.strip()
+    return ""
+
+
+def is_product_lookup(query: str) -> bool:
+    """库存/价格/是否销售需要查商品目录；说明、规格与政策继续走知识库。"""
+    compact = "".join((query or "").split())
+    if any(word in compact for word in _PRODUCT_LOOKUP_WORDS):
+        return True
+    return compact.startswith("有") and compact.rstrip("?？").endswith("吗") and "什么" not in compact
 
 
 def confidence_gate(state) -> str:

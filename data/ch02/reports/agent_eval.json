@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "generated_at": "2026-09-08T22:11:39",
+    "chat_model": "deepseek-ai/DeepSeek-V4-Flash",
+    "base_url": "http://localhost:8000"
+  },
+  "summary": {
+    "passed": 7,
+    "total": 7,
+    "rate": 1.0,
+    "all_pass": true
+  },
+  "cases": [
+    {
+      "id": "A01",
+      "question": "订单 1001 的物流到哪了",
+      "passed": true,
+      "expected_tools": [
+        "query_order",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "query_order",
+        "query_logistics"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您的订单 1001（智能猫砂盆）目前物流情况如下：\n\n📦 **物流单号**：SF213502378238（顺丰）\n📍 **当前状态**：已揽件\n📍 **当前位置**：成都分拨中心，已发出\n\n包裹刚完成揽件并从成都发出，正在运输途中。由于物流轨迹是外部服务实时更新的，具体的配送时间我这边无法承诺，建议您稍后留意物流信息的动态更新哦。有其他需要随时找我~ 😊",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    },
+    {
+      "id": "A02",
+      "question": "智能猫砂盆有货吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": true,
+      "actual_product_found": true,
+      "answer": "有的！我们目前有 **3 款智能猫砂盆** 在售，都有货哦：\n\n1. **智能猫砂盆 Pro** — ¥1739，库存 28 件\n   - 9L，适合 1.5kg 至 8kg 猫咪\n   - 自动清理、活性炭除臭，支持 App 健康记录\n\n2. **智能猫砂盆 Lite** — ¥1099，库存 45 件\n   - 6L，适合 1.5kg 至 6kg 猫咪\n   - 自动清理与物理除臭，不含 App 联网功能\n\n3. **智能猫砂盆 Max** — ¥2399，库存 12 件\n   - 12L，适合大型猫与多猫家庭\n   - 双重称重防夹、App 多猫健康档案\n\n请问您家猫咪的体型或数量是怎样的呢？我可以帮您推荐最合适的一款～ 😊",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    },
+    {
+      "id": "A03",
+      "question": "有汽水吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": false,
+      "actual_product_found": false,
+      "answer": "抱歉，我查询了一下，目前我们的商品目录中**没有销售汽水**这类商品哦。\n\n如果您想找其他饮品或零食，可以告诉我具体想找什么，我帮您查查看～ 😊",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    },
+    {
+      "id": "A04",
+      "question": "宠物定位器有货吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": true,
+      "actual_product_found": true,
+      "answer": "我帮您查了一下，「宠物定位器」（4G 定位，IP67 防水，支持电子围栏）目前**暂时缺货**，库存为 0，暂时无法下单购买。\n\n这款商品售价为 **299 元**。如果您需要，可以订阅到货提醒，等补货后我们会第一时间通知您。请问还有其他可以帮您的吗？😊",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    },
+    {
+      "id": "A05",
+      "question": "订单 2002 多少钱",
+      "passed": true,
+      "expected_tools": [
+        "query_order"
+      ],
+      "actual_tools": [
+        "query_order"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "订单 2002 是「自动饮水机」，金额 **1557 元**，目前状态为「待付款」。请问还需要我帮你做什么吗？😊",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    },
+    {
+      "id": "A06",
+      "question": "我要投诉，你们太差了",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    },
+    {
+      "id": "A07",
+      "question": "今天天气怎么样",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "actions": true,
+        "product_found": true,
+        "answer": true
+      }
+    }
+  ]
+}

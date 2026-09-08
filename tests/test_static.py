@@ -26,6 +26,7 @@ def test_admin_pages_are_reachable():
         ("/admin", "/api/admin/overview"),
         ("/kb", "/api/kb/overview"),
         ("/rag-eval", "/api/rag-eval/overview"),
+        ("/agent-eval", "/api/agent-eval/overview"),
         ("/review", "/api/review/queue"),
         ("/observability", "/api/observability/overview"),
         ("/topics", "/api/topics/distribution"),

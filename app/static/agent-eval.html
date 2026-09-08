@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>喵喵优选 · Agent 评测</title>
+  <link rel="stylesheet" href="/static/acceptance.css" />
+  <style>
+    .score { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:16px 0; }
+    .metric { border:3px solid var(--ink); background:var(--paper); padding:10px 13px; box-shadow:var(--shadow-sm); }
+    .metric b { display:block; font-size:24px; }
+    .metric span { color:var(--muted); font-size:11.5px; }
+    .cases { display:flex; flex-direction:column; gap:12px; }
+    .case { border:3px solid var(--ink); background:var(--paper); padding:11px 13px; }
+    .case.fail { background:#ffe9ec; }
+    .case .head { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .case h3 { margin:0; font-size:14px; }
+    .case .line { margin-top:7px; font-size:12px; line-height:1.7; }
+    .case .answer { white-space:pre-wrap; background:var(--cream); border:2px solid var(--ink); padding:8px 10px; }
+    .tag { border:2px solid var(--ink); padding:1px 6px; background:var(--fur); font-size:11px; }
+    .pass .tag.status { background:var(--online); }
+    .fail .tag.status { background:var(--error); color:white; }
+    @media (max-width:760px) { .score { grid-template-columns:repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Agent 评测</h1>
+      <span class="sub">工具选择 · 顺序调用 · 商品存在性 · 越界拒答</span>
+      <span class="spacer"></span>
+      <button class="btn" id="refreshBtn">刷新</button>
+    </div>
+    <div id="body"><div class="miss">加载中…</div></div>
+  </div>
+  <div id="toast"></div>
+  <script src="/static/admin.js"></script>
+  <script src="/static/acceptance.js"></script>
+  <script>
+    function tags(values) {
+      const box = el("span");
+      for (const value of values || []) box.appendChild(el("span", "tag", value));
+      if (!(values || []).length) box.appendChild(document.createTextNode("无"));
+      return box;
+    }
+
+    function metric(value, label) {
+      const box = el("div", "metric");
+      box.appendChild(el("b", null, value));
+      box.appendChild(el("span", null, label));
+      return box;
+    }
+
+    function render(d) {
+      const body = $("body"); body.textContent = "";
+      if (!d.present) {
+        body.appendChild(missingBox(d.hint));
+        body.appendChild(jobRow([d.job], load, d.make));
+        return;
+      }
+      const s = d.summary || {}, meta = d.meta || {};
+      const score = el("div", "score");
+      score.appendChild(metric((s.passed || 0) + "/" + (s.total || 0), "通过用例"));
+      score.appendChild(metric(Math.round((s.rate || 0) * 100) + "%", "通过率"));
+      score.appendChild(metric(String((s.total || 0) - (s.passed || 0)), "失败用例"));
+      score.appendChild(metric(meta.chat_model || "—", "聊天模型"));
+      body.appendChild(score);
+
+      const panel = el("div", "panel");
+      const h = el("h2", null, "逐题结果");
+      h.appendChild(el("span", "pill " + (s.all_pass ? "pass" : "fail"), s.all_pass ? "全部通过" : "需要处理"));
+      panel.appendChild(h);
+      panel.appendChild(el("p", "lede", "每条请求都走真实 /api/agent；页面展示期望工具、实际工具和最终回答。上次运行：" + (meta.generated_at || "—")));
+      const list = el("div", "cases");
+      for (const c of d.cases || []) {
+        const box = el("div", "case " + (c.passed ? "pass" : "fail"));
+        const head = el("div", "head");
+        head.appendChild(el("span", "tag status", c.passed ? "通过" : "失败"));
+        head.appendChild(el("span", "tag", c.id));
+        head.appendChild(el("h3", null, c.question));
+        box.appendChild(head);
+        const expected = el("div", "line"); expected.appendChild(document.createTextNode("期望工具：")); expected.appendChild(tags(c.expected_tools)); box.appendChild(expected);
+        const actual = el("div", "line"); actual.appendChild(document.createTextNode("实际工具：")); actual.appendChild(tags(c.actual_tools)); box.appendChild(actual);
+        if ((c.expected_actions || []).length || (c.actual_actions || []).length) {
+          const actions = el("div", "line"); actions.appendChild(document.createTextNode("交互动作：")); actions.appendChild(tags(c.actual_actions)); box.appendChild(actions);
+        }
+        if (c.expected_product_found !== null && c.expected_product_found !== undefined) {
+          box.appendChild(el("div", "line", "商品存在性：期望 " + c.expected_product_found + " / 实际 " + c.actual_product_found));
+        }
+        box.appendChild(el("div", "line answer", c.error || c.answer || "(无回答)"));
+        list.appendChild(box);
+      }
+      panel.appendChild(list);
+      panel.appendChild(el("div", "subhead", "在页面上重跑"));
+      panel.appendChild(jobRow([d.job], load, d.make));
+      body.appendChild(panel);
+    }
+
+    async function load() {
+      try { render(await api("/api/agent-eval/overview")); }
+      catch (e) { const body=$("body"); body.textContent=""; body.appendChild(missingBox("取数失败：" + e.message)); }
+    }
+    mountAdminNav("/agent-eval");
+    $("refreshBtn").addEventListener("click", load);
+    load();
+  </script>
+</body>
+</html>

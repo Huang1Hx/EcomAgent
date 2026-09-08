@@ -52,6 +52,8 @@ JOBS: dict[str, JobSpec] = {
         # ch04 检索质量:四策略对照评估(检索段确定性 + 生成段过 LLM 裁判)
         JobSpec("eval-rag", "RAG 评估(四策略对照)", ("make", "eval-rag"),
                 "需 Milvus + 已建库 + 聊天上游,分钟级", heavy=True),
+        JobSpec("eval-agent", "主 Agent 端到端评测", ("make", "eval-agent"),
+                "需应用 :8000 + MCP Server + 聊天上游", heavy=True),
         # ch09 观测与成本:意图成本账、评估趋势、置信度阈值校准
         JobSpec("cost-report", "意图成本账", ("make", "cost-report"),
                 "需 Langfuse 在跑且窗口内有 trace"),

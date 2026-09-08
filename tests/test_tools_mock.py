@@ -27,4 +27,30 @@ async def test_query_product_names_and_determinism():
     p1 = await query_product.ainvoke({"product_name": "猫粮"})
     p2 = await query_product.ainvoke({"product_name": "猫粮"})
     assert p1 == p2                                   # 同种子可复现
-    assert p1["product_name"] == "猫粮" and "price" in p1
+    assert p1["found"] is True
+    assert p1["match_count"] >= 2
+    assert all("price" in product and "stock" in product for product in p1["products"])
+
+
+async def test_query_product_目录外商品明确返回未找到():
+    out = await query_product.ainvoke({"product_name": "汽水"})
+    assert out == {
+        "found": False,
+        "query": "汽水",
+        "code": "product_not_found",
+        "message": "商品目录中未找到“汽水”，当前不销售该商品。",
+    }
+
+
+async def test_query_product_具体品类不混入更短的相关词商品():
+    out = await query_product.ainvoke({"product_name": "智能猫砂盆"})
+    assert {product["sku"] for product in out["products"]} == {
+        "MH-LP100", "MH-LP50", "MH-LP200",
+    }
+
+
+async def test_query_product_缺货商品与不存在商品语义不同():
+    out = await query_product.ainvoke({"product_name": "宠物定位器"})
+    assert out["found"] is True
+    assert out["products"][0]["stock"] == 0
+    assert out["products"][0]["in_stock"] is False

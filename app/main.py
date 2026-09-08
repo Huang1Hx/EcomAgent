@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.acceptance import router as acceptance_router
+from app.api.agent_eval import router as agent_eval_router
 from app.api.actions import router as actions_router
 from app.api.admin import router as admin_router
 from app.api.agent import router as agent_router
@@ -96,6 +97,7 @@ app.include_router(feedback_router)
 app.include_router(review_router)
 app.include_router(topics_router)
 app.include_router(acceptance_router)
+app.include_router(agent_eval_router)
 app.include_router(kb_router)
 app.include_router(rageval_router)
 app.include_router(observability_router)
@@ -113,7 +115,7 @@ async def chat_page() -> FileResponse:
 
 @app.get("/admin", include_in_schema=False)
 async def admin_page() -> FileResponse:
-    """后台管理首页:知识库、RAG 评估、飞轮待审、观测与成本、主题分布、分类器验收各一张卡,一处进出。
+    """后台管理首页:知识库、RAG/Agent 评估、飞轮待审、观测与成本、主题分布、分类器验收各一张卡,一处进出。
     各模块页面还是各自原本的路径,首页只把入口收到一起,文档里贴过的链接照样能用。"""
     return FileResponse(_STATIC_DIR / "admin.html")
 
@@ -128,6 +130,12 @@ async def kb_page() -> FileResponse:
 async def rageval_page() -> FileResponse:
     """ch04 RAG 评估页:四策略对照的那份报告,页面上看,也在页面上重跑。"""
     return FileResponse(_STATIC_DIR / "rageval.html")
+
+
+@app.get("/agent-eval", include_in_schema=False)
+async def agent_eval_page() -> FileResponse:
+    """主 Agent 端到端评测：工具选择、顺序调用、缺货与越界行为。"""
+    return FileResponse(_STATIC_DIR / "agent-eval.html")
 
 
 @app.get("/review", include_in_schema=False)

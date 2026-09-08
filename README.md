@@ -72,5 +72,5 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 | 3000 | Langfuse（`make langfuse-up` 之后） |
 | 19530 | Milvus |
 
-应用那几个页面：`/` 聊天、`/kb` 知识库录入、`/review` 飞轮待审、`/observability` 观测与成本、
+应用那几个页面：`/` 聊天、`/kb` 知识库录入、`/rag-eval` RAG 评估、`/agent-eval` Agent 评测、`/review` 飞轮待审、`/observability` 观测与成本、
 `/topics` 主题分布、`/acceptance` 分类器验收。

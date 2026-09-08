@@ -2,7 +2,6 @@
 # 后端八股网站：xiaolincoding.com
 # Agent网站：xiaolinnote.com
 # 简历模版：jianli.xiaolinnote.com
-import random
 from typing import Annotated
 
 from langchain_core.tools import InjectedToolArg, tool
@@ -10,6 +9,7 @@ from pydantic import Field
 
 from app.tools import registry
 from app.tools.business import order_snapshot, owns_order
+from app.tools.catalog import public_product, search_products
 
 # 查不到和不是本人的单回同一句话。分开回就成了枚举 oracle:攻击者靠回答差异
 # 就能挨个试出哪些订单号真实存在。
@@ -33,14 +33,21 @@ async def query_order(
 async def query_product(
     product_name: Annotated[str, Field(description="商品名称或关键词,例如 猫粮")],
 ) -> dict:
-    """查询商品的价格、库存和规格。用于用户咨询某商品是否有货、多少钱时。"""
-    rng = random.Random(f"product:{product_name}")
-    return {
-        "product_name": product_name,
-        "price": rng.randint(20, 999),
-        "stock": rng.randint(0, 500),
-        "spec": rng.choice(["标准装", "家庭装", "试用装"]),
-    }
+    """查询目录中真实存在商品的价格、库存和规格。
+
+    用户问是否销售、是否有货、多少钱时必须调用。found=false 表示目录中没有该商品，
+    应明确告知当前不销售，严禁根据商品名自行生成价格或库存。
+    """
+    products = [public_product(p) for p in search_products(product_name)]
+    if not products:
+        return {
+            "found": False,
+            "query": product_name,
+            "code": "product_not_found",
+            "message": f"商品目录中未找到“{product_name}”，当前不销售该商品。",
+        }
+    return {"found": True, "query": product_name,
+            "match_count": len(products), "products": products}
 
 
 registry.register(registry.spec_from_langchain_tool(
