@@ -126,7 +126,7 @@ eval:
 	uv run python scripts/eval_extract.py
 
 eval-agent:
-	uv run python scripts/eval_agent.py
+	PYTHONPATH=. uv run python scripts/eval_agent.py
 
 eval-ch05:
 	uv run python scripts/eval_ch05.py

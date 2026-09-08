@@ -2,6 +2,9 @@
 # 后端八股网站：xiaolincoding.com
 # Agent网站：xiaolinnote.com
 # 简历模版：jianli.xiaolinnote.com
+import re
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -100,6 +103,30 @@ class Settings(BaseSettings):
     # (可答通过率 85%、应拒放行率 0%,报告见 data/ch09/reports/confidence_calibration.txt,
     #  「观测与成本」页 /observability 上也能看,推荐值与这里不一致时页面会标出来)
     evidence_confidence_threshold: float = 0.26
+
+    @field_validator("chat_model", "chat_base_url", "chat_api_key",
+                     "embed_api_key", "rerank_api_key")
+    @classmethod
+    def required_account_value(cls, value: str) -> str:
+        """必填项拒绝空白和首尾空格，避免启动成功后才收到难定位的 401。"""
+        if not value or not value.strip():
+            raise ValueError("账号配置不能为空")
+        if value != value.strip():
+            raise ValueError("账号配置首尾不能包含空格或制表符")
+        return value
+
+    @field_validator("chat_base_url", "embed_base_url", "rerank_base_url",
+                     "intent_base_url", "summary_base_url")
+    @classmethod
+    def valid_upstream_url(cls, value: str) -> str:
+        """尽早拦住 `.env` 两行粘连，例如 URL 尾部混入 `CHAT_MODEL=...`。"""
+        if not value:  # intent / summary 允许留空并回落聊天上游
+            return value
+        if not value.startswith(("http://", "https://")):
+            raise ValueError("上游地址必须以 http:// 或 https:// 开头")
+        if re.search(r"(?:CHAT|INTENT|SUMMARY|EMBED|RERANK)_[A-Z_]+=", value):
+            raise ValueError("上游地址疑似粘入了另一条环境变量，请检查 .env 换行")
+        return value
 
 
 settings = Settings()

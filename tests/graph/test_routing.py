@@ -26,6 +26,16 @@ def test_route_by_intent_five_outlets(intent, expect):
     assert route_by_intent({"intent": intent}) == expect
 
 
+@pytest.mark.parametrize("query", ["有汽水吗", "智能猫砂盆有货吗", "猫粮多少钱", "宠物定位器库存"])
+def test_product_lookup_questions_use_business_tools(query):
+    assert route_by_intent({"intent": "商品咨询", "resolved_query": query}) == "business"
+
+
+@pytest.mark.parametrize("query", ["猫粮怎么保存", "智能猫砂盆支持什么功能", "退货运费谁出"])
+def test_product_knowledge_questions_keep_rag_route(query):
+    assert route_by_intent({"intent": "商品咨询", "resolved_query": query}) == "knowledge"
+
+
 def test_route_by_intent_unknown_defaults_business():
     assert route_by_intent({"intent": "火星语"}) == "business"
     assert route_by_intent({}) == "business"

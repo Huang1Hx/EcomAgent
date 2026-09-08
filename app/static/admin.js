@@ -15,6 +15,7 @@
     { href: "/admin", label: "后台首页" },
     { href: "/kb", label: "知识库录入" },
     { href: "/rag-eval", label: "RAG 评估" },
+    { href: "/agent-eval", label: "Agent 评测" },
     { href: "/review", label: "飞轮待审" },
     { href: "/observability", label: "观测与成本" },
     { href: "/topics", label: "主题分布" },

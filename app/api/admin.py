@@ -2,7 +2,7 @@
 # 后端八股网站：xiaolincoding.com
 # Agent网站：xiaolinnote.com
 # 简历模版：jianli.xiaolinnote.com
-"""后台首页聚合 API:知识库、RAG 评估、飞轮待审、观测与成本、主题分布、分类器验收各给一张卡。
+"""后台首页聚合 API:知识库、RAG/Agent 评估、飞轮、观测、主题与分类器各给一张卡。
 
 各块依赖不同(mysql / Milvus / 嵌入与聊天上游 / :8110 分类器)。任何一块的依赖没起,
 只让它自己那张卡显示读数失败,不连坐整页——后台首页的用处正是在依赖不齐的时候
@@ -12,7 +12,7 @@
 """
 from fastapi import APIRouter
 
-from app.api import acceptance, kb, observability, rageval
+from app.api import acceptance, agent_eval, kb, observability, rageval
 from app.db import repository
 
 router = APIRouter(prefix="/api/admin")
@@ -86,6 +86,34 @@ async def _rageval_card() -> dict:
         card["status"] = "ok"
         card["headline"] = f"{RAG_LABEL.get(best['strategy'], best['strategy'])} 领先,总体 MRR {best['mrr']:.3f}"
     card["note"] = f"上次跑于 {ov['meta'].get('generated_at') or '—'};页面只读产物,不重算"
+    return card
+
+
+async def _agent_eval_card() -> dict:
+    """主 Agent 评测：展示工具选择、顺序调用与关键业务行为的端到端结果。"""
+    card = _card("agent_eval", "Agent 评测", "/agent-eval",
+                 "真实请求 → 意图分流 → 工具调用 → 最终回答，逐题核对完整链路")
+    try:
+        ov = await agent_eval.overview()
+    except Exception as e:
+        card["note"] = f"{type(e).__name__}: {e}"
+        return card
+    if not ov["present"]:
+        card["status"], card["headline"] = "missing", "还没跑过主 Agent 评测"
+        card["note"] = "需应用 :8000、MCP Server 与聊天上游"
+        return card
+    summary = ov.get("summary") or {}
+    passed, total = summary.get("passed", 0), summary.get("total", 0)
+    failed = max(0, total - passed)
+    card["metrics"] = [
+        {"label": "通过", "value": f"{passed}/{total}"},
+        {"label": "通过率", "value": f"{round(summary.get('rate', 0) * 100)}%"},
+        {"label": "失败", "value": failed},
+        {"label": "模型", "value": (ov.get("meta") or {}).get("chat_model", "—")},
+    ]
+    card["status"] = "ok" if summary.get("all_pass") else "attention"
+    card["headline"] = "全部用例通过" if summary.get("all_pass") else f"{failed} 条链路需要处理"
+    card["note"] = f"上次跑于 {(ov.get('meta') or {}).get('generated_at', '—')}"
     return card
 
 
@@ -204,6 +232,6 @@ async def _classifier_card() -> dict:
 
 @router.get("/overview")
 async def overview() -> dict:
-    return {"modules": [await _kb_card(), await _rageval_card(), await _review_card(),
+    return {"modules": [await _kb_card(), await _rageval_card(), await _agent_eval_card(), await _review_card(),
                         await _observability_card(), await _topics_card(),
                         await _classifier_card()]}

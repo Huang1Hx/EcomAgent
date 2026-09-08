@@ -44,7 +44,8 @@ services:
       - mewhelp-milvus-minio:/minio_data
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      # 该固定版本镜像不带 curl，但自带 mc；用官方客户端探活避免服务正常却误报 unhealthy。
+      test: ["CMD", "mc", "ready", "local"]
       interval: 30s
       timeout: 20s
       retries: 3

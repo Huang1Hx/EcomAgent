@@ -22,7 +22,7 @@ from app.core.prompts import (
     REFUND_JUDGE_HINT, SCRIPT_REPLY_CHITCHAT, SCRIPT_REPLY_OTHER,
 )
 from app.db import repository
-from app.graph.routing import INTENT_TO_ROUTE
+from app.graph.routing import route_by_intent
 from app.tools import business, engine, registry
 
 logger = logging.getLogger(__name__)
@@ -173,7 +173,7 @@ async def classify_intent(state) -> dict:
     query = state.get("resolved_query") or _user_text(state)
     r = await intent_mod.classify(query, _history_text(state))
     intent, conf = r["intent"], r["confidence"]
-    route = INTENT_TO_ROUTE.get(intent, "business")
+    route = route_by_intent({"intent": intent, "resolved_query": query})
     tag_intent(intent, conf)   # ch09:意图进当前 trace 的 metadata+tag,Cost Control 按意图分堆
     return {"intent": intent, "intent_confidence": conf, "route": route,
             "trace": {"intent": intent, "intent_confidence": conf, "route": route}}

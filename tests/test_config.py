@@ -54,3 +54,32 @@ def test_settings_env_override(monkeypatch):
     _fill(monkeypatch)
     monkeypatch.setenv("TOKEN_BUDGET", "500")
     assert Settings(_env_file=None).token_budget == 500
+
+
+def test_chat_model_accepts_another_provider_model_name(monkeypatch):
+    """配置层不绑定当前模型；实际可用性由对应上游及工具调用能力决定。"""
+    _fill(monkeypatch)
+    monkeypatch.setenv("CHAT_MODEL", "provider/new-tool-capable-model")
+    monkeypatch.setenv("CHAT_BASE_URL", "https://api.other-provider.example/v1")
+    monkeypatch.setenv("CHAT_API_KEY", "other-provider-key")
+    settings = Settings(_env_file=None)
+    assert settings.chat_model == "provider/new-tool-capable-model"
+    assert settings.chat_base_url == "https://api.other-provider.example/v1"
+
+
+@pytest.mark.parametrize("field", sorted(_REQUIRED))
+def test_required_account_values_reject_blank_or_surrounding_whitespace(monkeypatch, field):
+    _fill(monkeypatch)
+    monkeypatch.setenv(field, "   " if not field.endswith("API_KEY") else " sk-test")
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)
+
+
+def test_chat_base_url_rejects_concatenated_env_assignment(monkeypatch):
+    _fill(monkeypatch)
+    monkeypatch.setenv(
+        "CHAT_BASE_URL",
+        "https://api.siliconflow.cn/v1CHAT_MODEL=deepseek-ai/DeepSeek-V4-Flash",
+    )
+    with pytest.raises(ValidationError, match="粘入了另一条环境变量"):
+        Settings(_env_file=None)
