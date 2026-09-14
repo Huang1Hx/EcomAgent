@@ -1,7 +1,3 @@
-# 来源：公众号@小林coding
-# 后端八股网站：xiaolincoding.com
-# Agent网站：xiaolinnote.com
-# 简历模版：jianli.xiaolinnote.com
 """后台首页聚合 API:知识库、RAG/Agent 评估、飞轮、观测、主题与分类器各给一张卡。
 
 各块依赖不同(mysql / Milvus / 嵌入与聊天上游 / :8110 分类器)。任何一块的依赖没起,

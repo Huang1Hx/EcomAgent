@@ -1,7 +1,3 @@
-# 来源：公众号@小林coding
-# 后端八股网站：xiaolincoding.com
-# Agent网站：xiaolinnote.com
-# 简历模版：jianli.xiaolinnote.com
 """后台首页聚合 API:全部模块卡齐出,某一块依赖没起只让它自己显示失败。"""
 import pytest
 from fastapi import FastAPI
