@@ -22,3 +22,6 @@ data/ch10/*
 # 运行日志:后台页发起的作业与 dev.sh 启动日志,本地产物不入库
 data/*.log
 data/ch04/*.log
+
+# 仅供本地使用的部署记录，不进入项目仓库
+DEPLOY.md

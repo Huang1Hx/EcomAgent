@@ -1,9 +1,10 @@
 # MewHelp — 电商智能客服 Agent
 
-《AI Agent 智能客服实战》的配套源码。一个能查订单物流、答政策 FAQ、走退款子流程、
-挖知识补库、还能微调一个主题分类器的完整客服系统。
+MewHelp 是 EcomAgent 项目中的电商售后智能客服系统，覆盖订单与物流查询、政策 FAQ、
+退款流程、知识补库、主题分类和评估观测。
 
-代码是随课程一章章长出来的，不分支：ch01 一个纯对话接口起步，到 ch10 收尾时是下面这套东西。
+系统采用确定性 Workflow 与 Agent 协作的架构：知识问答先检索并校验证据，退款流程先获取订单与政策；
+其他业务由 Agent 按需调用受控工具获取事实并回答。
 
 ## 技术栈
 
@@ -23,8 +24,7 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 
 浏览器打开 <http://localhost:8000> 就是聊天页。
 
-**详细的安装、配置、建知识库、常见问题，看飞书那篇「MewHelp 项目源码下载」**，
-这里只留一条能把服务拉起来的最短路径。两边写岔了以那篇为准。
+`make help` 可以查看带说明的常用命令及部分依赖提示；启动失败时先确认 `.env`、Docker 服务和模型上游配置。
 
 ## 代码怎么组织
 
@@ -38,30 +38,28 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 | `app/db/` | 表模型与仓储 |
 | `app/static/` | 前端页面。聊天、知识库录入、飞轮待审、观测与成本、主题分布、分类器验收 |
 | `mcp_servers/` | 两台业务 MCP Server，物流和售后各一台，独立进程 |
-| `sql/` | 各章的建表与迁移，容器首启按文件名顺序自动执行 |
+| `sql/` | 数据库建表、迁移与种子数据，容器首启按文件名顺序自动执行 |
 | `scripts/` | 建库、评估、微调这些离线活 |
-| `dataset/` | ch10主题分类器的训练、验证和测试JSONL数据；后续统一从仓库根读取 |
-| `docs/superpowers/` | 各章的 spec 和 plan。课程实战篇教的就是这套流程，留着当范本 |
+| `dataset/` | 主题分类器的训练、验证和测试JSONL数据；后续统一从仓库根读取 |
+| `docs/superpowers/` | 功能设计与实施计划 |
 
-## 各章长出了什么，怎么验
+## 核心能力与验收命令
 
 `make test` 跑全部单测，不打真实模型。下面这些要真服务在跑。
 
-| 章 | 这一章长出来的东西 | 验收 |
+| 能力 | 主要内容 | 验收 |
 | - | - | - |
-| ch01 | 流式对话、结构化提取 | `make eval` |
-| ch02 | 五个 `@tool` 业务工具，单轮 Function Calling | `make eval-agent` |
-| ch03 | 切块、嵌入、MySQL 与 Milvus 双写、对话挖知识 | `make kb-build` `make kb-vectorize` `make eval-retrieval` |
-| ch04 | 混合检索、RRF、重排、Query 改写、四策略评估 | `make smoke-rag` `make eval-rag` |
-| ch05 | LangGraph workflow 骨架 + 主力 Agent 的 ReAct 环 | `make eval-ch05` |
-| ch06 | 分流器、指代消解、退款子流程的 interrupt/resume | `make smoke-interrupt` `make eval-ch06` |
-| ch07 | 上下文管理。滑窗、摘要、前缀缓存 | `make eval-ch07` |
-| ch08 | 工具系统。MCP 动态发现、统一执行引擎、审计日志 | `make eval-ch08` |
-| ch09 | Langfuse 自部署、数据飞轮、成本账 | `make langfuse-up` `make flywheel` `make eval-flywheel` `make cost-report` |
-| ch10 | 主题分类器。语料、微调、阈值扫描、ONNX 推理服务 | `make ch10-corpus` `make ch10-train` `make ch10-eval` |
+| 对话入口 | 流式对话、结构化提取 | `make eval` |
+| Agent 工具 | 五个业务工具、Function Calling | `make eval-agent` |
+| 知识库 | 切块、嵌入、MySQL 与 Milvus 双写、对话挖知识 | `make kb-build` `make kb-vectorize` `make eval-retrieval` |
+| 混合检索 | BM25、向量检索、RRF、重排、Query 改写 | `make smoke-rag` `make eval-rag` |
+| 工作流 | LangGraph 分流、ReAct、退款 interrupt/resume | `make smoke-interrupt` `make eval-ch06` |
+| 上下文 | 滑窗、摘要、前缀缓存 | `make eval-ch07` |
+| 工具系统 | MCP 动态发现、统一执行引擎、审计日志 | `make eval-ch08` |
+| 数据飞轮 | Langfuse、自检拒答、审核回写、成本统计 | `make langfuse-up` `make flywheel` `make eval-flywheel` `make cost-report` |
+| 主题分类 | 语料治理、微调、阈值扫描、ONNX 推理服务 | `make ch10-corpus` `make ch10-train` `make ch10-eval` |
 
-每条命令的前置条件（哪些服务得先起、哪张表得先建）写在飞书那篇文档的「各章验收」段里。
-`make help` 也能看到带说明的完整目标清单。
+带说明的命令及其依赖提示可以通过 `make help` 查看。
 
 ## 端口
 
@@ -69,7 +67,7 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 | - | - |
 | 8000 | 应用 |
 | 8101 / 8102 | 业务 MCP Server，物流 / 售后 |
-| 8110 | ch10 主题分类器推理服务（`make classifier-up` 之后） |
+| 8110 | 主题分类器推理服务（`make classifier-up` 之后） |
 | 3000 | Langfuse（`make langfuse-up` 之后） |
 | 19530 | Milvus |
 

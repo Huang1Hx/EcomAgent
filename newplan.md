@@ -13,13 +13,13 @@
 ## Global Constraints
 
 - 2026-10-14已完成Git根目录迁移并把原外层数据集纳入仓库根 `dataset/`；除迁移所需Compose配置与本计划外，尚未修改业务代码和现有数据。
-- 保留用户已有未提交内容：`data/ch10/reports/golden_report.json` 和 `面试.md`，任何任务不得覆盖或顺手提交。
+- 保留用户已有未提交内容：`data/ch10/reports/golden_report.json`，任何任务不得覆盖或顺手提交；本地非项目记录与部署草稿由 Git 排除规则保护。
 - 不降低订单归属校验，不允许通过订单号枚举他人订单；未知商品必须继续返回未找到，不能生成虚假价格或库存。
 - 不实现真实支付、库存扣减或地址收集；客服只提供商品查询、订单列表/详情、物流查询和跳转商城的建议动作。
 - 在线九类意图路由继续由主链负责；17类RoBERTa仅服务飞轮问题的离线主题归类，不接管在线意图路由。
-- 实施后必须保持简历的七条技术主线：混合检索、四信号幻觉治理、九类到五出口、三层上下文、三入口飞轮、17类多标签分类器、评估驱动优化；商品/订单补强只能作为演示与验收支撑，不能把项目改造成商城交易系统而冲淡客服主线。
-- 任何简历指标必须来自当前代码、当前模型和冻结数据集的重新运行，报告必须带 git SHA、数据集SHA256、知识库快照、模型版本和时间。
-- 简历中的历史数字是“待复验目标”而不是开发验收的硬编码答案；如果独立测试结果不同，保留架构叙事并更新数字与口径，禁止通过改答案、泄漏盲测集或放宽判定规则去迎合简历。
+- 实施后必须保持本 EcomAgent 项目的七条技术主线：混合检索、四信号幻觉治理、九类到五出口、三层上下文、三入口飞轮、17类多标签分类器、评估驱动优化；商品/订单补强只能作为演示与验收支撑，不能把项目改造成商城交易系统而冲淡客服主线。
+- 任何发布指标必须来自当前代码、当前模型和冻结数据集的重新运行，报告必须带 git SHA、数据集SHA256、知识库快照、模型版本和时间。
+- 历史指标只作为待复验基线，不是开发验收的硬编码答案；如果独立测试结果不同，按当前报告更新数字与口径，禁止通过改答案、泄漏盲测集或放宽判定规则迎合预设结果。
 - 每个任务按测试失败→最小实现→测试通过→独立审核→提交的顺序执行，不得把多个任务混入一次提交。
 
 ## Review Focus
@@ -62,19 +62,19 @@
 - **会话修复在 `log_node` 统一补齐确定性AI消息**：数据库落库成功后，只有确定性答复路径返回带 `db-<message_id>` 的 `AIMessage`；Agent路径已有AI消息，不重复追加。
 - **目录扁平化不是零影响改名**：迁移时已重建`.venv`、显式固定并迁移Docker卷、保留Git历史和用户改动；后续开发不得重新引入 `EcomAgent/python/` 路径。
 
-## 简历对齐验收矩阵
+## 项目目标与发布验收矩阵
 
-| 简历主张 | 计划对应任务 | 实施后必须保留的事实 | 发布条件 |
+| 项目能力 | 计划对应任务 | 实施后必须保留的事实 | 发布条件 |
 |---|---|---|---|
 | BGE-M3 + BM25 + RRF + BGE-Reranker | Task 3、6 | 检索链路和五桶口径继续存在，不用商品/订单改造替换RAG主线 | 当前配置盲测报告给出Recall@5、MRR、答案覆盖；历史98.3%/89.4%/97.4%只在复验达到时继续使用 |
 | 四信号置信度与拒答治理 | Task 3、6 | Top1、有效证据数、分差、关键条款命中四信号及生成前门控保留 | 独立校准集选阈值、独立测试集报告误放/误拦；“人工幻觉率”必须有逐条人工台账 |
-| 九类意图到五个出口的Workflow + Agent | Task 1、2 | 九类和五出口不改名；知识、退款以及商品/订单事实获取都有不可跳过的确定性前置节点 | 图结构测试证明Agent无法绕过证据/订单/商品上下文；若仍存在直达Agent路径，简历必须限定适用范围 |
+| 九类意图到五个出口的Workflow + Agent | Task 1、2 | 九类和五出口不改名；知识、退款以及商品/订单事实获取都有不可跳过的确定性前置节点 | 图结构测试证明Agent无法绕过证据/订单/商品上下文；若仍存在直达Agent路径，发布说明必须限定适用范围 |
 | 三层上下文、异步摘要、工具裁剪 | Task 1、3、6 | 原文层、半压缩层、摘要层和异步摘要机制保留 | 固定多轮集对比基线；只有事实保留率相对提升达到50%时才保留“提升50%” |
 | 三入口数据飞轮 | Task 3、6 | 低置信、语义自检失败、用户负反馈三入口以及人工审核回写保留 | 端到端闭环集证明写回后可重新命中，并报告补库成功率和回归情况 |
 | 17类多标签RoBERTa + ONNX | Task 4、5、6 | 分类器仍是飞轮旁路，不与在线九类意图混用 | 独立测试集报告micro-F1；只有达到96.4%才保留原数字。“轻量”需延迟、内存或量化证据，否则写“ONNX独立部署” |
-| 独立负责整体架构和技术决策 | Task 0、8 | 用ADR、提交和验收报告记录本轮真正独立完成的改造 | 这是项目来源与个人贡献问题，不能靠补代码倒推；课程配套源码事实不变时，应改成“基于课程项目独立完成二次开发和关键改造” |
+| 架构决策可追溯性 | Task 0、8 | 用ADR、提交和验收报告记录 EcomAgent 的关键改造 | 对外说明只引用当前代码、提交记录和可复现验收结果，不使用无法追溯的主张 |
 
-> 对齐原则：优先让项目实现贴近简历的架构主线；指标和个人贡献只按证据表述，不能反向制造证据。
+> 验收原则：项目能力和指标只按当前可复现证据表述，不能反向制造证据。
 
 ## 依赖与并行关系
 
@@ -99,7 +99,6 @@ Task 6 → Task 8 最终回归与文档
 **Files:**
 - Create: `data/eval/manifests/baseline.json`
 - Preserve: `data/ch10/reports/golden_report.json`
-- Preserve: `面试.md`
 
 **Interfaces:**
 - Consumes: 当前Git状态、模型配置、知识库块数、各评测集文件。
@@ -361,15 +360,15 @@ Task 6 → Task 8 最终回归与文档
 - Create: `scripts/run_release_eval.py`
 - Create: `data/eval/reports/release-eval.json`
 - Create: `data/eval/reports/release-eval.md`
-- Create: `data/eval/reports/resume-evidence.json`
-- Create: `data/eval/reports/resume-evidence.md`
+- Create: `data/eval/reports/project-evidence.json`
+- Create: `data/eval/reports/project-evidence.md`
 - Modify: `Makefile`
 - Test: `tests/test_release_eval_report.py`
 
 **Interfaces:**
 - `make eval-release`按固定顺序运行：数据合同→单测→RAG盲测→意图→Agent多轮→飞轮闭环→分类器→上下文。
 - 报告明确区分 `passed`、`failed`、`provider_error`、`service_unavailable`、`not_run`，不把缺服务算成通过。
-- `resume-evidence.json`逐条对应上方七项简历主张，状态只能是 `supported`、`partially_supported`、`unsupported`，并附报告路径、分子、分母、配置和建议简历措辞。
+- `project-evidence.json`逐条对应上方七项项目能力，状态只能是 `supported`、`partially_supported`、`unsupported`，并附报告路径、分子、分母、配置和建议发布表述。
 
 - [ ] **Step 1: 写聚合报告失败测试**
   确认任何子任务未运行或报告SHA不匹配时总状态不能是通过。
@@ -383,7 +382,7 @@ Task 6 → Task 8 最终回归与文档
 - [ ] **Step 4: 人工复核忠实度失败案例**
   保存逐条处置状态；只有实际复核过的样本才能表述为“人工复核”。
 
-- [ ] **Step 5: 生成简历证据映射**
+- [ ] **Step 5: 生成项目证据映射**
   对Recall@5/MRR/覆盖率、误放/误拦、上下文提升、飞轮闭环和分类器micro-F1逐项读取当前发布报告；任何未运行、旧模型或旧数据报告一律不能标为 `supported`。
 
 - [ ] **Step 6: 提交发布报告**
@@ -406,7 +405,6 @@ Task 6 → Task 8 最终回归与文档
 - Recreate: `.venv/`
 - Modify: `docker-compose.yml`
 - Modify: `README.md`
-- Modify: `DEPLOY.md`
 - Modify: any scripts/docs containing old absolute cwd
 
 **Interfaces:**
@@ -424,7 +422,7 @@ Task 6 → Task 8 最终回归与文档
   在移动目录前使Compose显式指向现有数据卷，并用 `docker compose config` 验证移动前后解析到相同卷。
 
 - [x] **Step 4: 移动仓库内容并保留所有用户文件**
-  不覆盖已存在的 `dataset/` 和父目录文件；单独清点并迁移未跟踪的 `面试.md`、日志和本地配置。
+  不覆盖已存在的 `dataset/` 和父目录文件；单独清点并迁移日志和本地配置，本地记录继续由忽略规则保护。
 
 - [x] **Step 5: 删除并重建虚拟环境**
   旧`.venv`不搬迁；在新根执行 `uv sync`，避免脚本shebang继续指向旧路径。
@@ -440,13 +438,12 @@ Task 6 → Task 8 最终回归与文档
 
 ---
 
-### Task 8: 最终回归、文档与简历证据更新
+### Task 8: 最终回归、文档与项目证据更新
 
 **Depends on:** Task 6；Task 7已完成。
 
 **Files:**
 - Modify: `README.md`
-- Modify: `DEPLOY.md`
 - Modify: `.env.example`
 - Modify: `newplan.md`（仅勾选实际完成项、记录最终报告路径）
 - Create: `docs/evaluation.md`
@@ -462,8 +459,8 @@ Task 6 → Task 8 最终回归与文档
 - [ ] **Step 2: 验证四个用户问题全部关闭**
   评测证据可追溯；分类器可恢复；商品/订单能正常演示且安全边界不变；拒答后下一轮不串答。
 
-- [ ] **Step 3: 更新项目介绍和简历数字**
-  保留“Workflow + Agent、混合检索、幻觉治理、三层上下文、数据飞轮、17类旁路分类器”主线；数字只引用 `release-eval.json` 中当前、可复现、带分母和置信区间的指标。课程项目来源不变时，个人职责采用“独立完成二次开发、关键改造与验收”，不声称原创全部课程架构。
+- [ ] **Step 3: 更新项目介绍和发布指标**
+  保留“Workflow + Agent、混合检索、幻觉治理、三层上下文、数据飞轮、17类旁路分类器”主线；数字只引用 `release-eval.json` 中当前、可复现、带分母和置信区间的指标，对外统一表述为本 EcomAgent 项目的实现与验收结果。
 
 - [ ] **Step 4: 最终审核与提交**
   Run: `git status --short && git diff --check && uv run pytest -q && make eval-release`
