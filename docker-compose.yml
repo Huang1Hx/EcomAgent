@@ -74,6 +74,10 @@ services:
 
 volumes:
   mewhelp-mysql-data:
+    name: mewhelp-mysql-data
   mewhelp-milvus-etcd:
+    name: mewhelp-milvus-etcd
   mewhelp-milvus-minio:
+    name: mewhelp-milvus-minio
   mewhelp-milvus-data:
+    name: mewhelp-milvus-data
