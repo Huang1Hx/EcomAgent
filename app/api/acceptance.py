@@ -17,12 +17,11 @@ from pydantic import BaseModel
 from app.core import jobs
 from app.core.taxonomy import SEVERITY, TOPIC_NAMES
 from app.db import repository
+from scripts.ch10.artifacts import CH10, DATA as DATASET
 
 router = APIRouter(prefix="/api/acceptance")
 
-CH10 = pathlib.Path("data/ch10")
 REPORTS = CH10 / "reports"
-DATASET = CH10 / "dataset"
 MODEL = CH10 / "model"
 ONNX = CH10 / "onnx"
 CLASSIFIER = "http://127.0.0.1:8110"

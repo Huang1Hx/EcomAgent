@@ -48,25 +48,22 @@ ch10-dataset:  ## ch10 分层划分 80/10/10 + 训练集增强(需聊天上游)
 	PYTHONPATH=. uv run python scripts/ch10/build_dataset.py
 
 ch10-train:  ## ch10 RoBERTa-wwm-ext 全参微调(MPS/CUDA/CPU 自适应,重依赖走 ml 组)
-	PYTHONPATH=. uv run --group ml python scripts/ch10/train.py
+	uv run --group ml python -m scripts.ch10.train --data-dir $(or $(DATA_DIR),dataset)
 
 ch10-eval:  ## ch10 测试集评测:每类 P/R/F1 + 混淆矩阵 + 容错红线 + 判错样本导出
-	PYTHONPATH=. uv run --group ml python scripts/ch10/evaluate.py
+	uv run --group ml python -m scripts.ch10.evaluate --data-dir $(or $(DATA_DIR),dataset)
 
 ch10-export:  ## ch10 导出 ONNX 并校验与 torch 预测完全一致
-	PYTHONPATH=. uv run --group ml python scripts/ch10/export_onnx.py
+	uv run --group ml python -m scripts.ch10.export_onnx --data-dir $(or $(DATA_DIR),dataset)
 
 ch10-threshold-scan:  ## ch10 阈值扫描重演:九候选线各算一遍 micro-F1(需 :8110)
-	PYTHONPATH=. uv run python scripts/ch10/scan_threshold_replay.py
+	uv run --group ml python -m scripts.ch10.scan_threshold_replay --data-dir $(or $(DATA_DIR),dataset)
 
 classifier-up:  ## ch10 推理服务 :8110(ONNX 轻运行时)
-	@mkdir -p log data
-	@PYTHONPATH=. nohup uv run --group ml python scripts/ch10/serve.py > log/classifier.log 2>&1 & echo $$! > data/classifier.pid
-	@sleep 2 && curl -sf http://127.0.0.1:8110/healthz >/dev/null && echo "分类器服务已拉起: :8110(pid 见 data/classifier.pid)" || echo "启动失败,看 log/classifier.log"
+	uv run --group ml python -m scripts.ch10.service start
 
 classifier-down:
-	-@kill `cat data/classifier.pid 2>/dev/null` 2>/dev/null; rm -f data/classifier.pid
-	@echo "分类器服务已停"
+	uv run --group ml python -m scripts.ch10.service stop
 
 classify-pool:  ## ch10 旁路批量归类:攒够一批归一次,写 topic_classifications(需 :8110;FORCE=1 不足一批也跑)
 	PYTHONPATH=. uv run python scripts/ch10/classify_pool.py $(if $(FORCE),--force,)

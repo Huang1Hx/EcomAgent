@@ -1,6 +1,9 @@
 """数据版本、服务资产及训练选择规则的回归。"""
 import importlib
 import json
+from pathlib import Path
+import subprocess
+import sys
 
 import numpy as np
 import pytest
@@ -75,3 +78,28 @@ def test_training_metrics_use_serving_fallback():
     from scripts.ch10.train import compute_metrics
     result = compute_metrics((np.array([[-2., -3.]]), np.array([[1, 0]])))
     assert result["micro_f1"] == 1.0
+
+
+@pytest.mark.parametrize("module", ["evaluate", "export_onnx", "scan_threshold_replay"])
+def test_cli_can_select_dataset_without_loading_assets(module):
+    if module != "scan_threshold_replay":
+        pytest.importorskip("transformers")
+    result = subprocess.run([sys.executable, "-m", f"scripts.ch10.{module}", "--help"],
+                            capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "--data-dir" in result.stdout
+
+
+def test_acceptance_page_reads_root_dataset(monkeypatch, tmp_path):
+    from app.api import acceptance
+    monkeypatch.chdir(tmp_path)
+    assert acceptance._split_stats()["splits"]["train"]["size"] == 2594
+
+
+def test_service_start_missing_bundle_returns_failure(tmp_path):
+    a = artifacts()
+    result = subprocess.run([sys.executable, "-m", "scripts.ch10.service", "start",
+                             "--model-dir", str(tmp_path)], capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "artifact" in result.stderr.lower()
+    assert not (tmp_path / "classifier.pid").exists()

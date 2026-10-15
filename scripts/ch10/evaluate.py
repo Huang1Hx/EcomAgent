@@ -4,6 +4,7 @@
 import datetime as dt
 import json
 import pathlib
+import argparse
 
 import numpy as np
 import torch
@@ -12,10 +13,10 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from app.core.taxonomy import LABEL2ID, NUM_CLASSES, SEVERITY, TOPIC_NAMES
 from scripts.ch10.inference_lib import apply_threshold
+from scripts.ch10 import artifacts
 
-MODEL_DIR = pathlib.Path("data/ch10/model")
-TEST = pathlib.Path("data/ch10/dataset/test.jsonl")
-REPORTS = pathlib.Path("data/ch10/reports")
+MODEL_DIR = artifacts.MODEL
+REPORTS = artifacts.REPORTS
 RED_LINES = {"严": 0.9, "中": 0.8}   # 档位 F1 红线;宽档不设线
 
 
@@ -37,11 +38,16 @@ def predict(model, tokenizer, texts: list[str], threshold: float, device: str) -
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data-dir", type=pathlib.Path, default=artifacts.DATA)
+    cli = ap.parse_args()
+    manifest = artifacts.verify_bundle(MODEL_DIR)
+    dataset = artifacts.verify_dataset(manifest["dataset"], cli.data_dir)
     device = pick_device()
     tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR).to(device)
     threshold = json.loads((MODEL_DIR / "threshold.json").read_text())["threshold"]
-    samples = [json.loads(l) for l in TEST.read_text(encoding="utf-8").splitlines() if l.strip()]
+    samples = artifacts.read_rows(cli.data_dir / "test.jsonl")
     texts = [s["text"] for s in samples]
     gold = np.zeros((len(samples), NUM_CLASSES), dtype=int)
     for i, s in enumerate(samples):
@@ -57,7 +63,8 @@ def main() -> None:
     cms = multilabel_confusion_matrix(gold, preds)
 
     REPORTS.mkdir(parents=True, exist_ok=True)
-    lines = ["# ch10 分类器评测报告(留出测试集)", "",
+    lines = ["# 分类器评测报告（现有v1测试集回归）", "",
+             "本报告使用历史已有数据分割，不是新建独立盲测结果。", "",
              f"测试集 {len(samples)} 条;判定阈值 {threshold}(验证集扫描所得)。", "",
              f"**micro**: P={micro_p:.3f} R={micro_r:.3f} F1={micro_f1:.3f}  |  "
              f"**macro**: P={macro_p:.3f} R={macro_r:.3f} F1={macro_f1:.3f}", "",
@@ -98,6 +105,9 @@ def main() -> None:
     (REPORTS / "error_samples.md").write_text("\n".join(err), encoding="utf-8")
 
     report = {
+        **artifacts.provenance(),
+        "dataset": dataset,
+        "model_sha256": artifacts.sha256(MODEL_DIR / "model.safetensors"),
         "ran_at": dt.datetime.now().isoformat(timespec="seconds"),
         "test_size": len(samples),
         "threshold": threshold,

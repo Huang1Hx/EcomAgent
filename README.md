@@ -26,6 +26,10 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 
 `make help` 可以查看带说明的常用命令及部分依赖提示；启动失败时先确认 `.env`、Docker 服务和模型上游配置。
 
+主题分类器可使用现有 `dataset/` 训练：`uv sync --frozen --group ml` 后依次执行
+`make ch10-train`、`make ch10-eval`、`make ch10-export`、`make classifier-up`。
+数据版本、模型位置与验收方式见 [分类器训练与恢复](docs/classifier-artifacts.md)。
+
 ## 代码怎么组织
 
 | 位置 | 装的是什么 |
@@ -40,7 +44,7 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 | `mcp_servers/` | 两台业务 MCP Server，物流和售后各一台，独立进程 |
 | `sql/` | 数据库建表、迁移与种子数据，容器首启按文件名顺序自动执行 |
 | `scripts/` | 建库、评估、微调这些离线活 |
-| `dataset/` | 主题分类器的训练、验证和测试JSONL数据；后续统一从仓库根读取 |
+| `dataset/` | 主题分类器的训练、验证和测试JSONL数据；脚本默认从仓库根读取 |
 | `docs/superpowers/` | 功能设计与实施计划 |
 
 ## 核心能力与验收命令

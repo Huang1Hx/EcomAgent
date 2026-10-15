@@ -6,15 +6,23 @@ import datetime as dt
 import json
 import pathlib
 import urllib.request
+import argparse
+import numpy as np
+from scripts.ch10 import artifacts
+from scripts.ch10.inference_lib import apply_threshold
 
-VAL = "data/ch10/dataset/val.jsonl"
-MODEL_THRESHOLD = pathlib.Path("data/ch10/model/threshold.json")
-REPORTS = pathlib.Path("data/ch10/reports")
+MODEL_THRESHOLD = artifacts.MODEL / "threshold.json"
+REPORTS = artifacts.REPORTS
 SERVICE = "http://127.0.0.1:8110/classify"
 
 
 def main() -> None:
-    rows = [json.loads(l) for l in open(VAL, encoding="utf-8")]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data-dir", type=pathlib.Path, default=artifacts.DATA)
+    cli = ap.parse_args()
+    manifest = artifacts.verify_bundle(artifacts.ONNX)
+    artifacts.verify_dataset(manifest["dataset"], cli.data_dir)
+    rows = artifacts.read_rows(cli.data_dir / "val.jsonl")
     print(f"验证集 {len(rows)} 条,打分一次,分数表固定")
     req = urllib.request.Request(
         SERVICE, data=json.dumps({"texts": [r["text"] for r in rows]}).encode(),
@@ -28,11 +36,11 @@ def main() -> None:
     best_t, best_f1 = None, -1.0
     scan: list[dict] = []
     for i in range(9):
-        t = 0.30 + i * 0.05
+        t = round(0.30 + i * 0.05, 2)
         tp = fp = fn = 0
-        for p_row, g_row in zip(probs, gold):
+        for p_row, g_row in zip(apply_threshold(np.array(probs), t), gold):
             for p, g in zip(p_row, g_row):
-                hit = p >= t
+                hit = bool(p)
                 if hit and g: tp += 1
                 elif hit: fp += 1
                 elif g: fn += 1
@@ -47,6 +55,7 @@ def main() -> None:
     in_use = json.loads(MODEL_THRESHOLD.read_text())["threshold"] if MODEL_THRESHOLD.exists() else None
     REPORTS.mkdir(parents=True, exist_ok=True)
     (REPORTS / "threshold_scan.json").write_text(json.dumps({
+        "dataset_sha256": manifest["dataset"]["sha256"],
         "ran_at": dt.datetime.now().isoformat(timespec="seconds"),
         "val_size": len(rows), "scan": scan,
         "best_threshold": round(best_t, 2), "best_micro_f1": round(best_f1, 4),

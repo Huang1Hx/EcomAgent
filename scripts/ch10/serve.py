@@ -2,6 +2,7 @@
 起停:make classifier-up / classifier-down(仓库惯例 nohup + pid 文件)。"""
 import json
 import pathlib
+import os
 
 import numpy as np
 import onnxruntime as ort
@@ -12,10 +13,13 @@ from tokenizers import Tokenizer
 
 from app.core.taxonomy import TOPIC_NAMES
 from scripts.ch10.inference_lib import apply_threshold
+from scripts.ch10 import artifacts
 
-DIR = pathlib.Path("data/ch10/onnx")
+DIR = pathlib.Path(os.environ.get("CLASSIFIER_MODEL_DIR", str(artifacts.ONNX)))
 
 app = FastAPI(title="mewhelp ch10 topic classifier")
+_manifest = artifacts.verify_bundle(DIR)
+artifacts.verify_dataset(_manifest["dataset"])
 _sess = ort.InferenceSession(str(DIR / "model.onnx"), providers=["CPUExecutionProvider"])
 _tok = Tokenizer.from_file(str(DIR / "tokenizer.json"))
 _tok.enable_truncation(max_length=128)
@@ -29,7 +33,9 @@ class ClassifyIn(BaseModel):
 
 @app.get("/healthz")
 def healthz():
-    return {"ok": True}
+    return {"ok": True, "dataset_sha256": _manifest["dataset"]["sha256"],
+            "onnx_sha256": _manifest["files"]["model.onnx"],
+            "threshold": _threshold, "labels": list(TOPIC_NAMES)}
 
 
 @app.post("/classify")
@@ -49,7 +55,7 @@ def classify(body: ClassifyIn):
     for row, pred in zip(probs, preds):
         labels = [TOPIC_NAMES[i] for i in range(len(pred)) if pred[i]]
         results.append({"labels": labels,
-                        "scores": {TOPIC_NAMES[i]: round(float(p), 4)
+                        "scores": {TOPIC_NAMES[i]: float(p)
                                    for i, p in enumerate(row)}})
     return {"results": results}
 
