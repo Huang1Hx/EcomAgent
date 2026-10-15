@@ -304,30 +304,30 @@ Task 6 → Task 8 最终回归与文档
 - Modify: `scripts/ch10/scan_threshold_replay.py`
 - Modify: `app/api/acceptance.py`
 - Modify: `.gitignore`（只放行数据/模型清单，继续忽略大文件）
-- Create: `scripts/ch10/artifact_manifest.py`
-- Create: `scripts/ch10/fetch_model.py`
-- Create: `data/ch10/artifact-manifest.example.json`
-- Test: `tests/ch10/test_artifact_manifest.py`
+- Create: `scripts/ch10/artifacts.py`
+- Create: `data/ch10/dataset-manifest.json`、`data/ch10/artifact-manifest.json`
+- Test: `tests/test_classifier_artifacts.py`、`tests/test_classifier_live.py`
+- Deferred: `scripts/ch10/fetch_model.py` 与远程产物清单（上传目标确定后实施）。
 
 **Interfaces:**
 - 所有脚本接受 `--data-dir`，默认解析仓库根 `dataset/`，不再隐式依赖被忽略的 `data/ch10/dataset/`。
-- `artifact-manifest.json`字段固定为 `dataset_sha256`、`base_model`、`train_config`、`threshold`、`model_sha256`、`onnx_sha256`、`metrics`、`artifact_uri`。
-- `fetch_model.py --manifest <path>` 下载后必须校验SHA256，再原子写入 `data/ch10/onnx/`。
+- `dataset-manifest.json`保存三个分割的数量、SHA256、逐类支持数、重复与交叉情况。`artifact-manifest.json`保存标签顺序、完整文件哈希和数据版本；训练参数及实际指标见 `training_report.json`。
+- 后续的 `fetch_model.py --manifest <path>` 下载后必须校验SHA256，再写入 `data/ch10/onnx/`；当前本地恢复直接重训。
 
-- [ ] **Step 1: 写路径与manifest失败测试**
-  覆盖数据目录缺失、数据哈希不匹配、ONNX哈希不匹配和下载中断，断言明确失败且不留下半文件。
+- [x] **Step 1: 写路径与本地产物失败测试**
+  覆盖数据哈希不匹配、ONNX/tokenizer/阈值哈希不匹配、服务误复用旧阈值和导出失败后保留旧包；下载中断测试随下载器后置。
 
-- [ ] **Step 2: 给训练/评测/导出脚本增加同一数据目录参数**
+- [x] **Step 2: 给训练/评测/导出脚本增加同一数据目录参数**
   train、val、test必须来自同一manifest版本。
 
-- [ ] **Step 3: 恢复数据血缘**
+- [x] **Step 3: 恢复可核实的数据版本信息**
   为数据增加旁挂manifest，记录现有2594/161/161的来源缺失事实；后续新样本必须记录真实、人工编写、合成或增强来源。
 
-- [ ] **Step 4: 设计大文件分发方式**
+- [ ] **Step 4（后置）: 设计大文件分发方式**
   本批次先生成本地manifest及可复跑训练命令；对象存储/GitHub Release上传与下载器后置。普通Git中只提交manifest、代码和报告，不提交模型大文件。
 
-- [ ] **Step 5: 提交资产管理代码**
-  Commit: `build: make classifier artifacts reproducible`
+- [x] **Step 5: 提交资产管理代码**
+  Commit: `587dc75`，后续服务校验改进见 `15f4f2c`、`5e00dd3`。
 
 ---
 
@@ -342,11 +342,11 @@ Task 6 → Task 8 最终回归与文档
 - Generate: `data/ch10/reports/export_report.json`
 - Generate: `data/ch10/artifact-manifest.json`
 - Modify: `Makefile`
-- Test: `tests/ch10/test_classifier_service.py`
-- Test: `tests/ch10/test_classify_pool_e2e.py`
+- Test: `tests/test_classifier_artifacts.py`
+- Test: `tests/test_classifier_live.py`
 
 **Interfaces:**
-- `make classifier-bootstrap`：已有且哈希正确则直接使用；否则按manifest下载；没有URI时给出 `make ch10-train && make ch10-export` 的明确指引。
+- 后续 `make classifier-bootstrap`：已有且哈希正确则直接使用；否则按远程manifest下载；目前可通过 `make ch10-train && make ch10-export` 本地生成。
 - `make classifier-up`：启动前校验 `model.onnx`、`tokenizer.json`、`threshold.json` 和manifest。
 
 - [x] **Step 1: 冻结现有分类器v1数据**
@@ -358,11 +358,11 @@ Task 6 → Task 8 最终回归与文档
 
 - [x] **Step 3: 在现有v1测试集评估**
   Run: `make ch10-eval`
-  Expected: 输出micro/macro及每类P/R/F1、支持数、错误样本和置信区间。
+  Expected: 输出micro/macro及每类P/R/F1、支持数、错误样本；置信区间随新增独立盲测数据在Task 3交付。
 
 - [x] **Step 4: 导出ONNX并校验一致性**
   Run: `make ch10-export`
-  Expected: Torch/ONNX逐样本预测一致，报告文件SHA256、体积、CPU延迟和峰值内存。
+  Expected: Torch/ONNX逐样本预测一致，报告文件SHA256、体积和CPU延迟；峰值内存本次标记未测，后续补性能专项。
 
 - [x] **Step 5: 启动服务并验收旁路**
   Run: `make classifier-up && curl -fsS http://127.0.0.1:8110/healthz`
@@ -372,7 +372,7 @@ Task 6 → Task 8 最终回归与文档
   从空的 `data/ch10/onnx/` 状态执行bootstrap，校验下载后服务可启动。
 
 - [x] **Step 7: 提交报告和manifest**
-  Commit: `feat: restore reproducible topic classifier service`
+  Commit: `5e00dd3`，模型大文件仅留本地；远程分发随Step 6后置。
 
 ---
 
