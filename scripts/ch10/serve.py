@@ -33,7 +33,8 @@ class ClassifyIn(BaseModel):
 
 @app.get("/healthz")
 def healthz():
-    return {"ok": True, "dataset_sha256": _manifest["dataset"]["sha256"],
+    return {"ok": True, "bundle_sha256": artifacts.bundle_id(_manifest),
+            "dataset_sha256": _manifest["dataset"]["sha256"],
             "onnx_sha256": _manifest["files"]["model.onnx"],
             "threshold": _threshold, "labels": list(TOPIC_NAMES)}
 

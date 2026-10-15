@@ -29,7 +29,7 @@ def start(model_dir):
     except (OSError, ValueError):
         current = None
     if current is not None:
-        if current.get("onnx_sha256") == manifest["files"]["model.onnx"]:
+        if current.get("bundle_sha256") == artifacts.bundle_id(manifest):
             print("分类器已就绪: http://127.0.0.1:8110")
             return
         raise RuntimeError("8110 已有不同版本服务，请确认并停止旧服务后重试")
@@ -49,7 +49,7 @@ def start(model_dir):
             if proc.poll() is not None:
                 raise RuntimeError(f"分类器启动失败，查看 {LOG}")
             try:
-                if health().get("onnx_sha256") == manifest["files"]["model.onnx"]:
+                if health().get("bundle_sha256") == artifacts.bundle_id(manifest):
                     print(f"分类器就绪: http://127.0.0.1:8110 (pid={proc.pid})")
                     return
             except (OSError, ValueError):

@@ -16,12 +16,20 @@ REPORTS = artifacts.REPORTS
 SERVICE = "http://127.0.0.1:8110/classify"
 
 
+def verify_service(health, manifest):
+    if health.get("bundle_sha256") != artifacts.bundle_id(manifest):
+        raise ValueError("running classifier bundle differs from disk artifacts")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data-dir", type=pathlib.Path, default=artifacts.DATA)
     cli = ap.parse_args()
     manifest = artifacts.verify_bundle(artifacts.ONNX)
     artifacts.verify_dataset(manifest["dataset"], cli.data_dir)
+    with urllib.request.urlopen("http://127.0.0.1:8110/healthz", timeout=5) as response:
+        health = json.load(response)
+    verify_service(health, manifest)
     rows = artifacts.read_rows(cli.data_dir / "val.jsonl")
     print(f"验证集 {len(rows)} 条,打分一次,分数表固定")
     req = urllib.request.Request(
@@ -52,10 +60,11 @@ def main() -> None:
         print(f"{t:>6.2f} {f1:>10.4f}")
     print(f"\n当选:阈值 {best_t:.2f}(验证集 micro-F1 {best_f1:.4f})→ 与 threshold.json 一致")
 
-    in_use = json.loads(MODEL_THRESHOLD.read_text())["threshold"] if MODEL_THRESHOLD.exists() else None
+    in_use = health["threshold"]
     REPORTS.mkdir(parents=True, exist_ok=True)
     (REPORTS / "threshold_scan.json").write_text(json.dumps({
         "dataset_sha256": manifest["dataset"]["sha256"],
+        "bundle_sha256": artifacts.bundle_id(manifest),
         "ran_at": dt.datetime.now().isoformat(timespec="seconds"),
         "val_size": len(rows), "scan": scan,
         "best_threshold": round(best_t, 2), "best_micro_f1": round(best_f1, 4),

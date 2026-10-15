@@ -24,11 +24,13 @@
 
 执行记录（仅凭实际结果勾选）：
 
-- [ ] C0：专用分支、原数据哈希与用户改动保护记录。
-- [ ] C1：数据路径、版本清单、训练可复现参数与失败测试接线。
-- [ ] C2：训练完成、val定阈值、test报告与ONNX导出。
-- [ ] C3：模型校验、服务启动、真实HTTP与隔离旁路验收。
-- [ ] C4：独立代码审核、完整测试、提交代码和报告。
+- [x] C0：在 `feat/classifier-restoration` 分支冻结2594/161/161原数据；用户的 `golden_report.json` 哈希保持 `e45edf0…877a8`，未提交。
+- [x] C1：统一根目录数据路径，记录逐文件SHA256、17类支持数、跨分割重叠及原数据血缘缺失；增加路径、哈希和失败启动测试。
+- [x] C2：Apple MPS 训练8轮（最佳为第7轮），val选择阈值0.35；现有v1 test的micro-F1为0.9835、macro-F1为0.9833。ONNX对161条样本与Torch预测完全一致，见 `data/ch10/reports/{training_report,eval_report,export_report}.json`。
+- [x] C3：本地模型和ONNX清单校验通过，HTTP健康接口暴露完整bundle身份；161条test通过真实HTTP与本地ONNX对照；独立MySQL测试库3条已有val样本首次写入、二次运行零写入，见 `tests/test_classifier_live.py`。
+- [x] C4：独立代码审核后修复3项发现；最终含真实HTTP和隔离MySQL的完整测试 `531 passed`，本批次代码及报告单独提交到分类器分支。
+
+本次代码审核提出的服务版本复用、失败导出保留旧包和阈值重演版本校验问题已补失败测试并修复。对外只能称“现有v1测试集回归”；新增盲测、远程模型分发和其他业务任务仍按下方未勾选任务推进。
 
 ## Global Constraints
 
@@ -347,29 +349,29 @@ Task 6 → Task 8 最终回归与文档
 - `make classifier-bootstrap`：已有且哈希正确则直接使用；否则按manifest下载；没有URI时给出 `make ch10-train && make ch10-export` 的明确指引。
 - `make classifier-up`：启动前校验 `model.onnx`、`tokenizer.json`、`threshold.json` 和manifest。
 
-- [ ] **Step 1: 冻结现有分类器v1数据**
+- [x] **Step 1: 冻结现有分类器v1数据**
   核验原有2594/161/161及17类顺序、标签、分割交叉、重复与SHA256；保留原数据。扩大独立测试支持数的任务移交Task 3，在新一轮训练之前先冻结新数据版本。
 
-- [ ] **Step 2: 训练并记录环境**
+- [x] **Step 2: 训练并记录环境**
   Run: `uv run --group ml python -m scripts.ch10.train --data-dir dataset`
   Expected: 生成模型、阈值和完整训练配置。
 
-- [ ] **Step 3: 在现有v1测试集评估**
+- [x] **Step 3: 在现有v1测试集评估**
   Run: `make ch10-eval`
   Expected: 输出micro/macro及每类P/R/F1、支持数、错误样本和置信区间。
 
-- [ ] **Step 4: 导出ONNX并校验一致性**
+- [x] **Step 4: 导出ONNX并校验一致性**
   Run: `make ch10-export`
   Expected: Torch/ONNX逐样本预测一致，报告文件SHA256、体积、CPU延迟和峰值内存。
 
-- [ ] **Step 5: 启动服务并验收旁路**
+- [x] **Step 5: 启动服务并验收旁路**
   Run: `make classifier-up && curl -fsS http://127.0.0.1:8110/healthz`
   使用隔离测试库和真实分类服务验证旁路写入与第二次运行幂等；不向业务问题池新增评测样本。
 
 - [ ] **Step 6（后置）: 上传模型资产并回下载复验**
   从空的 `data/ch10/onnx/` 状态执行bootstrap，校验下载后服务可启动。
 
-- [ ] **Step 7: 提交报告和manifest**
+- [x] **Step 7: 提交报告和manifest**
   Commit: `feat: restore reproducible topic classifier service`
 
 ---

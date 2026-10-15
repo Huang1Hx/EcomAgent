@@ -1,0 +1,135 @@
+{
+  "kind": "onnx",
+  "labels": [
+    "退换货",
+    "物流",
+    "尺码",
+    "发票",
+    "质量问题",
+    "运费",
+    "优惠活动",
+    "价保",
+    "支付",
+    "订单修改",
+    "库存补货",
+    "商品信息",
+    "保修维修",
+    "账号",
+    "会员积分",
+    "评价",
+    "其他"
+  ],
+  "dataset": {
+    "version": "classifier-dataset-v1",
+    "sha256": "fb68b0d8142c93a77a546d1e1e49ebbfb1d7010d811987795d5a9e884dbfc56c",
+    "evaluation_scope": "existing_v1_regression_not_new_blind_test",
+    "lineage": "original sample-level provenance unavailable",
+    "labels": [
+      "退换货",
+      "物流",
+      "尺码",
+      "发票",
+      "质量问题",
+      "运费",
+      "优惠活动",
+      "价保",
+      "支付",
+      "订单修改",
+      "库存补货",
+      "商品信息",
+      "保修维修",
+      "账号",
+      "会员积分",
+      "评价",
+      "其他"
+    ],
+    "splits": {
+      "train": {
+        "count": 2594,
+        "sha256": "185d99d53fa2932a317f8588aa6d54d887bf2a73ab7307c390f0a54ad7f507c9",
+        "duplicate_rows": 2,
+        "label_support": {
+          "退换货": 241,
+          "物流": 198,
+          "尺码": 207,
+          "发票": 190,
+          "质量问题": 166,
+          "运费": 170,
+          "优惠活动": 222,
+          "价保": 166,
+          "支付": 166,
+          "订单修改": 182,
+          "库存补货": 172,
+          "商品信息": 160,
+          "保修维修": 154,
+          "账号": 158,
+          "会员积分": 162,
+          "评价": 158,
+          "其他": 158
+        }
+      },
+      "val": {
+        "count": 161,
+        "sha256": "b8a19883f2e59687f30dcccc1d510f285783bc891bb41d70e2a1cac5c9d60ed3",
+        "duplicate_rows": 0,
+        "label_support": {
+          "退换货": 14,
+          "物流": 12,
+          "尺码": 11,
+          "发票": 12,
+          "质量问题": 9,
+          "运费": 13,
+          "优惠活动": 12,
+          "价保": 10,
+          "支付": 9,
+          "订单修改": 12,
+          "库存补货": 9,
+          "商品信息": 10,
+          "保修维修": 13,
+          "账号": 11,
+          "会员积分": 12,
+          "评价": 11,
+          "其他": 11
+        }
+      },
+      "test": {
+        "count": 161,
+        "sha256": "e19ef1cc2d2ae095bc4b71fd93cec1292dc819cd7be2abb77d0a8c2b43d2b1ed",
+        "duplicate_rows": 0,
+        "label_support": {
+          "退换货": 14,
+          "物流": 12,
+          "尺码": 10,
+          "发票": 11,
+          "质量问题": 9,
+          "运费": 11,
+          "优惠活动": 12,
+          "价保": 9,
+          "支付": 10,
+          "订单修改": 11,
+          "库存补货": 11,
+          "商品信息": 10,
+          "保修维修": 10,
+          "账号": 11,
+          "会员积分": 11,
+          "评价": 9,
+          "其他": 10
+        }
+      }
+    },
+    "overlaps": {
+      "train_val": 0,
+      "train_test": 0,
+      "val_test": 0
+    }
+  },
+  "model_sha256": "d13c52f66a63f307399865565066811b3785be7df4af0c8e77fb9bc039eb2dd2",
+  "files": {
+    "model.onnx": "bcea2710750eb4a3a74b47fe305ab294f3cd007f159333ab29f453e61f40fde2",
+    "threshold.json": "8bf72f8d9823cb058b3aeccc961dd43bd8b7b4e51027e1c65080097d01806f5b",
+    "tokenizer.json": "2b3adfe2277cc215c4021e33ca69a1d9871dbc71046d9704c0b8f8910e5da1e0",
+    "tokenizer_config.json": "e0d296aa18ede6b0c36a8469ba2f1ee5d8aeb912031b70982fc47ab312db55f4"
+  },
+  "training_git_sha": "587dc750257a0d362a5a85339d5248d83a5acbad",
+  "artifact_uri": null
+}

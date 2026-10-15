@@ -7,6 +7,8 @@ import importlib.metadata
 import json
 from pathlib import Path
 import subprocess
+import tempfile
+import uuid
 
 from app.core.taxonomy import TOPIC_NAMES
 
@@ -92,7 +94,8 @@ def verify_bundle(directory=ONNX):
     if manifest.get("labels") != list(TOPIC_NAMES):
         raise ValueError("artifact labels differ from current taxonomy")
     required = {"tokenizer.json", "threshold.json"}
-    required.add("model.onnx" if directory.name != "model" else "model.safetensors")
+    kind = manifest.get("kind", "torch" if "model.safetensors" in manifest.get("files", {}) else "onnx")
+    required.add("model.safetensors" if kind == "torch" else "model.onnx")
     if not required <= manifest.get("files", {}).keys():
         raise ValueError("artifact manifest missing required files")
     for name, digest in manifest["files"].items():
@@ -101,6 +104,42 @@ def verify_bundle(directory=ONNX):
         if sha256(directory / name) != digest:
             raise ValueError(f"artifact SHA256 mismatch: {name}")
     return manifest
+
+
+def bundle_id(manifest):
+    """完整清单身份：权重相同但阈值、分词器或标签版本不同也不能复用。"""
+    return hashlib.sha256(json.dumps(manifest, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def publish_export(build, out, report_path):
+    """先生成并验证临时包，再替换正式目录；失败保留原包和失败现场。"""
+    out, report_path = Path(out), Path(report_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix="onnx-staging-", dir=out.parent))
+    backup = None
+    try:
+        report = build(staging)
+        if report.get("passed") is not True:
+            raise ValueError("ONNX export validation failed")
+        verify_bundle(staging)
+        if out.exists():
+            backup = out.with_name(f"onnx-backup-{uuid.uuid4().hex[:12]}")
+            out.rename(backup)
+        try:
+            staging.rename(out)
+        except BaseException:
+            if backup is not None:
+                backup.rename(out)
+            raise
+        report["onnx_path"] = str(out / "model.onnx")
+        write_json(report_path, report)
+        return report
+    except Exception as exc:
+        write_json(report_path, {"passed": False, "ran_at": datetime.now(timezone.utc).isoformat(),
+                                 "error": f"{type(exc).__name__}: {exc}",
+                                 "staging_path": str(staging),
+                                 "previous_bundle": str(backup or out)})
+        raise
 
 
 def provenance():

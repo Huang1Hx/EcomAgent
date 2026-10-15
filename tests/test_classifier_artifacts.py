@@ -103,3 +103,43 @@ def test_service_start_missing_bundle_returns_failure(tmp_path):
     assert result.returncode != 0
     assert "artifact" in result.stderr.lower()
     assert not (tmp_path / "classifier.pid").exists()
+
+
+def test_running_service_with_old_threshold_is_rejected(tmp_path, monkeypatch):
+    from scripts.ch10 import service
+    a = artifacts()
+    for name in ("model.onnx", "tokenizer.json", "threshold.json"):
+        (tmp_path / name).write_text(name)
+    manifest = {"labels": list(a.TOPIC_NAMES), "files": a.file_hashes(tmp_path),
+                "dataset": a.dataset_manifest()}
+    a.write_json(tmp_path / "artifact-manifest.json", manifest)
+    monkeypatch.setattr(service, "health", lambda: {
+        "onnx_sha256": manifest["files"]["model.onnx"], "bundle_sha256": "old-threshold"})
+    with pytest.raises(RuntimeError, match="不同版本"):
+        service.start(tmp_path)
+
+
+def test_failed_export_preserves_previous_bundle_and_reports_failure(tmp_path):
+    a = artifacts()
+    assert hasattr(a, "publish_export"), "export must stage artifacts before publishing"
+    old = tmp_path / "onnx"
+    old.mkdir()
+    (old / "model.onnx").write_bytes(b"valid-old-model")
+    report = tmp_path / "export_report.json"
+    a.write_json(report, {"passed": True})
+
+    def fail_export(staging):
+        (staging / "model.onnx").write_bytes(b"partial-new-model")
+        raise ValueError("logits mismatch")
+
+    with pytest.raises(ValueError, match="logits mismatch"):
+        a.publish_export(fail_export, old, report)
+    assert (old / "model.onnx").read_bytes() == b"valid-old-model"
+    assert json.loads(report.read_text())["passed"] is False
+
+
+def test_threshold_replay_rejects_wrong_running_bundle(monkeypatch):
+    from scripts.ch10 import scan_threshold_replay as replay
+    assert hasattr(replay, "verify_service"), "threshold replay must verify HTTP bundle identity"
+    with pytest.raises(ValueError, match="bundle"):
+        replay.verify_service({"bundle_sha256": "old"}, {"files": {"model.onnx": "new"}})

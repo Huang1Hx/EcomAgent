@@ -21,20 +21,6 @@ OUT = artifacts.ONNX
 REPORTS = artifacts.REPORTS
 
 
-def _write_report(checked: int, mismatch: int, metadata: dict) -> None:
-    """一致性校验的结论落盘;失败也写,验收页要能看见「上次导出没过」而不是一片空白。"""
-    onnx_path = OUT / "model.onnx"
-    REPORTS.mkdir(parents=True, exist_ok=True)
-    (REPORTS / "export_report.json").write_text(json.dumps({
-        **metadata,
-        "ran_at": dt.datetime.now().isoformat(timespec="seconds"),
-        "checked": checked, "mismatch": mismatch, "passed": mismatch == 0,
-        "onnx_path": str(onnx_path),
-        "onnx_bytes": onnx_path.stat().st_size if onnx_path.exists() else 0,
-        "opset": 17,
-    }, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
 class LogitsWrapper(torch.nn.Module):
     """HF 模型输出是 ModelOutput dict,导出前包一层只回 logits 张量。"""
 
@@ -53,7 +39,13 @@ def main() -> None:
     cli = ap.parse_args()
     model_manifest = artifacts.verify_bundle(MODEL_DIR)
     dataset = artifacts.verify_dataset(model_manifest["dataset"], cli.data_dir)
-    OUT.mkdir(parents=True, exist_ok=True)
+    artifacts.publish_export(lambda out: export_to(out, cli.data_dir, model_manifest, dataset),
+                             OUT, REPORTS / "export_report.json")
+    artifacts.write_json(artifacts.CH10 / "artifact-manifest.json", artifacts.verify_bundle(OUT))
+    print(f"ONNX 导出并校验通过:{OUT}/model.onnx")
+
+
+def export_to(out, data_dir, model_manifest, dataset):
     tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
     model.eval()
@@ -63,7 +55,7 @@ def main() -> None:
     torch.onnx.export(
         wrapper,
         (sample["input_ids"], sample["attention_mask"], sample["token_type_ids"]),
-        str(OUT / "model.onnx"),
+        str(out / "model.onnx"),
         input_names=["input_ids", "attention_mask", "token_type_ids"],
         output_names=["logits"],
         dynamic_axes={"input_ids": dyn, "attention_mask": dyn,
@@ -71,17 +63,17 @@ def main() -> None:
         dynamo=False,
         opset_version=17,
     )
-    tokenizer.save_pretrained(OUT)          # 带出 tokenizer.json 给轻运行时用
-    shutil.copy(MODEL_DIR / "threshold.json", OUT / "threshold.json")
+    tokenizer.save_pretrained(out)
+    shutil.copy(MODEL_DIR / "threshold.json", out / "threshold.json")
 
     # 一致性校验:测试集全量,ONNX 与 torch 的过线标签必须完全一致。
     # 参照模型必须重新加载:tracing 会把 transformers v5 masking_utils 的分支
     # 打成常量、污染进程内已有模型(实测被污染的参照 logits 差到 1.88,而文件本身没问题)
     ref = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
     ref.eval()
-    threshold = json.loads((OUT / "threshold.json").read_text())["threshold"]
-    texts = [r["text"] for r in artifacts.read_rows(cli.data_dir / "test.jsonl")]
-    sess = ort.InferenceSession(str(OUT / "model.onnx"),
+    threshold = json.loads((out / "threshold.json").read_text())["threshold"]
+    texts = [r["text"] for r in artifacts.read_rows(data_dir / "test.jsonl")]
+    sess = ort.InferenceSession(str(out / "model.onnx"),
                                 providers=["CPUExecutionProvider"])
     mismatch = 0
     with torch.no_grad():
@@ -105,21 +97,20 @@ def main() -> None:
         latencies.append((time.perf_counter() - start) * 1000)
     metadata = {**artifacts.provenance(), "dataset": dataset,
                 "model_sha256": artifacts.sha256(MODEL_DIR / "model.safetensors"),
-                "onnx_sha256": artifacts.sha256(OUT / "model.onnx"),
+                "onnx_sha256": artifacts.sha256(out / "model.onnx"),
                 "cpu_batch1_latency_ms": {"median": float(np.median(latencies)),
                                            "p95": float(np.percentile(latencies, 95)),
                                            "warmup": 3, "runs": 20},
                 "peak_memory": "not_measured_in_isolated_runtime"}
-    _write_report(len(texts), mismatch, metadata)
     if mismatch:
-        raise SystemExit(f"ONNX 与 torch 预测不一致 {mismatch} 条,导出失败")
+        raise ValueError(f"ONNX 与 torch 预测不一致 {mismatch} 条,导出失败")
     manifest = {"kind": "onnx", "labels": list(artifacts.TOPIC_NAMES), "dataset": dataset,
-                "model_sha256": metadata["model_sha256"], "files": artifacts.file_hashes(OUT),
+                "model_sha256": metadata["model_sha256"], "files": artifacts.file_hashes(out),
                 "training_git_sha": model_manifest["training"]["git_sha"],
                 "artifact_uri": None}
-    artifacts.write_json(OUT / "artifact-manifest.json", manifest)
-    artifacts.write_json(artifacts.CH10 / "artifact-manifest.json", manifest)
-    print(f"ONNX 导出并校验通过({len(texts)} 条预测完全一致):{OUT}/model.onnx")
+    artifacts.write_json(out / "artifact-manifest.json", manifest)
+    return {**metadata, "checked": len(texts), "mismatch": mismatch, "passed": True,
+            "onnx_bytes": (out / "model.onnx").stat().st_size, "opset": 17}
 
 
 if __name__ == "__main__":

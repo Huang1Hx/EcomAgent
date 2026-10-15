@@ -1,9 +1,159 @@
 {
-  "ran_at": "2026-07-28T18:23:09",
+  "ran_at": "2026-10-15T11:23:27.185277+00:00",
+  "git_sha": "15f4f2c4bb45fb98fc17ad82a38dbfc81a96de30",
+  "dirty_paths": [
+    "data/ch10/reports/error_samples.md",
+    "data/ch10/reports/eval_report.json",
+    "data/ch10/reports/eval_report.md",
+    "data/ch10/reports/golden_report.json",
+    "scripts/ch10/artifacts.py",
+    "scripts/ch10/export_onnx.py",
+    "scripts/ch10/scan_threshold_replay.py",
+    "scripts/ch10/serve.py",
+    "scripts/ch10/service.py",
+    "tests/test_classifier_artifacts.py"
+  ],
+  "source_sha256": {
+    "scripts/ch10/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scripts/ch10/artifacts.py": "3c0c2c70fafb0df91e7441a525c197cbc372fc80d3037e9d1f902261b170433e",
+    "scripts/ch10/build_corpus.py": "5ffc5496803ddfe41e9fdca4881eee0d359b38998e83119b7e9e12f0c08bf9be",
+    "scripts/ch10/build_dataset.py": "3a7c94df2e8bcef1154a290bae8120d3734dfe10b4e5eb4aba06f0f305a40d57",
+    "scripts/ch10/classify_pool.py": "6272f5c2a6e67cb001bc78ba49e174551fa248475755aba42f829ba8ee15c37a",
+    "scripts/ch10/corpus_lib.py": "663a8967d5ec1fe7a92e93121a566dbe7e424242e6e403a5b800e6b4a4119d0e",
+    "scripts/ch10/evaluate.py": "c71713c6c29adc128351212d1b0fbd1a33106f0e9c20e9d43f5cc0a35cfb37ca",
+    "scripts/ch10/export_onnx.py": "59c891fe9591128122f985d304a8fb4806834391c76f555c950851e8914bd365",
+    "scripts/ch10/inference_lib.py": "ac3211e8d5dc33f54bf8e0d3774343413bba14899568cdf97aacd74677f2b86c",
+    "scripts/ch10/prelabel.py": "6cc78029dfbf870bd171cd3df216eec05971dda5dd40c3e59f7e90fd0c253e70",
+    "scripts/ch10/scan_threshold_replay.py": "bc2457494ffd0e46bcd0d255f02eb70dfbc85fe75b9ff90aadb0c4b7e115bf9c",
+    "scripts/ch10/serve.py": "3910f27cfdc82da9fc58d35805e77844d9bff76dcdecec09fc76de3bf1491b50",
+    "scripts/ch10/service.py": "b3d74a37cffa60c471928d877bbb3d97138423e8ea24142c05a3d816a2948758",
+    "scripts/ch10/train.py": "6d788612e8c21b20d73d223a2abc2bfffd4127679f9c7e1ff8c0460dddb97f7d",
+    "scripts/ch10/validate_golden.py": "db304ee37847e0999c5fce4e53639eb7f6ee169e5884c60c06270d31ffe963ca"
+  },
+  "versions": {
+    "torch": "2.13.0",
+    "transformers": "5.14.1",
+    "onnxruntime": "1.27.0",
+    "tokenizers": "0.22.2",
+    "scikit-learn": "1.9.0"
+  },
+  "dataset": {
+    "version": "classifier-dataset-v1",
+    "sha256": "fb68b0d8142c93a77a546d1e1e49ebbfb1d7010d811987795d5a9e884dbfc56c",
+    "evaluation_scope": "existing_v1_regression_not_new_blind_test",
+    "lineage": "original sample-level provenance unavailable",
+    "labels": [
+      "退换货",
+      "物流",
+      "尺码",
+      "发票",
+      "质量问题",
+      "运费",
+      "优惠活动",
+      "价保",
+      "支付",
+      "订单修改",
+      "库存补货",
+      "商品信息",
+      "保修维修",
+      "账号",
+      "会员积分",
+      "评价",
+      "其他"
+    ],
+    "splits": {
+      "train": {
+        "count": 2594,
+        "sha256": "185d99d53fa2932a317f8588aa6d54d887bf2a73ab7307c390f0a54ad7f507c9",
+        "duplicate_rows": 2,
+        "label_support": {
+          "退换货": 241,
+          "物流": 198,
+          "尺码": 207,
+          "发票": 190,
+          "质量问题": 166,
+          "运费": 170,
+          "优惠活动": 222,
+          "价保": 166,
+          "支付": 166,
+          "订单修改": 182,
+          "库存补货": 172,
+          "商品信息": 160,
+          "保修维修": 154,
+          "账号": 158,
+          "会员积分": 162,
+          "评价": 158,
+          "其他": 158
+        }
+      },
+      "val": {
+        "count": 161,
+        "sha256": "b8a19883f2e59687f30dcccc1d510f285783bc891bb41d70e2a1cac5c9d60ed3",
+        "duplicate_rows": 0,
+        "label_support": {
+          "退换货": 14,
+          "物流": 12,
+          "尺码": 11,
+          "发票": 12,
+          "质量问题": 9,
+          "运费": 13,
+          "优惠活动": 12,
+          "价保": 10,
+          "支付": 9,
+          "订单修改": 12,
+          "库存补货": 9,
+          "商品信息": 10,
+          "保修维修": 13,
+          "账号": 11,
+          "会员积分": 12,
+          "评价": 11,
+          "其他": 11
+        }
+      },
+      "test": {
+        "count": 161,
+        "sha256": "e19ef1cc2d2ae095bc4b71fd93cec1292dc819cd7be2abb77d0a8c2b43d2b1ed",
+        "duplicate_rows": 0,
+        "label_support": {
+          "退换货": 14,
+          "物流": 12,
+          "尺码": 10,
+          "发票": 11,
+          "质量问题": 9,
+          "运费": 11,
+          "优惠活动": 12,
+          "价保": 9,
+          "支付": 10,
+          "订单修改": 11,
+          "库存补货": 11,
+          "商品信息": 10,
+          "保修维修": 10,
+          "账号": 11,
+          "会员积分": 11,
+          "评价": 9,
+          "其他": 10
+        }
+      }
+    },
+    "overlaps": {
+      "train_val": 0,
+      "train_test": 0,
+      "val_test": 0
+    }
+  },
+  "model_sha256": "d13c52f66a63f307399865565066811b3785be7df4af0c8e77fb9bc039eb2dd2",
+  "onnx_sha256": "bcea2710750eb4a3a74b47fe305ab294f3cd007f159333ab29f453e61f40fde2",
+  "cpu_batch1_latency_ms": {
+    "median": 6.056209094822407,
+    "p95": 7.949764293152839,
+    "warmup": 3,
+    "runs": 20
+  },
+  "peak_memory": "not_measured_in_isolated_runtime",
   "checked": 161,
   "mismatch": 0,
   "passed": true,
-  "onnx_path": "data/ch10/onnx/model.onnx",
   "onnx_bytes": 409354806,
-  "opset": 17
+  "opset": 17,
+  "onnx_path": "/Users/huanghx/project/EcomAgent/data/ch10/onnx/model.onnx"
 }
