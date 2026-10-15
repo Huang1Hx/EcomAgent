@@ -10,6 +10,26 @@
 
 **Spec:** 本文件的“需求基线”和“设计决策”即本轮获准的自包含规格；用户要求本轮不另写规格文件。
 
+## 当前执行批次：先恢复分类器（2026-10-15）
+
+用户已授权先写好计划，再在专用分支训练分类器。当前工作分支为 `feat/classifier-restoration`，起点 `0de8e19`；先执行分类器范围的基线、Task 4 和 Task 5。Task 1、2、3、6、8 的其他业务改造与新增评测数据后置。
+
+- 使用原有 `dataset/{train,val,test}.jsonl`（2594/161/161），保持内容和划分不变。冻结哈希、17类顺序、逐类支持数和精确重叠检查，记录血缘信息缺失；测试结果标为现有 v1 数据集回归结果。
+- 顺序固定为：现有数据核验与冻结 → 脚本统一数据目录 → 训练（仅train）与轮次/阈值选择（仅val）→ test评测 → ONNX导出及服务一致性 → 旁路联调 → 审核与提交。
+- 训练默认沿用 RoBERTa 全参微调配置：学习率 `2e-5`、训练batch 16、最多8轮、早停耐心2、种子42；记录实际设备、依赖版本、基座revision、参数、代码SHA、耗时和最优轮次。资源不足时记录原因再调整batch，不根据test分数调参。
+- 本批次完成本地模型资产清单、完整文件哈希、启动前校验及可复跑训练命令。对象存储/Release上传、下载器和新的独立测试数据作为后续交付，不阻塞本地训练和服务恢复。
+- 训练/评测/ONNX产物使用同一数据版本和标签顺序；模型、tokenizer、阈值任一不匹配应非零退出。服务探活应暴露产物版本；启动失败不得仅打印文字后返回成功。
+- 保护 `data/ch10/reports/golden_report.json`；旧评测报告先归档再生成本次报告。旁路验收使用测试数据库与已有样本的临时副本，禁止为了验证而向业务问题池灌入评测数据。
+- 当前批次验收：可复跑训练、真实模型权重、test实测结果、Torch/ONNX/HTTP一致性、服务健康、旁路幂等测试、相关测试及完整回归；历史96.4%不作为硬性训练目标。
+
+执行记录（仅凭实际结果勾选）：
+
+- [ ] C0：专用分支、原数据哈希与用户改动保护记录。
+- [ ] C1：数据路径、版本清单、训练可复现参数与失败测试接线。
+- [ ] C2：训练完成、val定阈值、test报告与ONNX导出。
+- [ ] C3：模型校验、服务启动、真实HTTP与隔离旁路验收。
+- [ ] C4：独立代码审核、完整测试、提交代码和报告。
+
 ## Global Constraints
 
 - 2026-10-14已完成Git根目录迁移并把原外层数据集纳入仓库根 `dataset/`；除迁移所需Compose配置与本计划外，尚未修改业务代码和现有数据。
@@ -87,7 +107,8 @@ Task 0 冻结基线
  ├─ Task 3 新评测集设计与标注 ─────────┤
  └─ Task 4 分类器训练资产准备 ──────────┘
 
-Task 4 → Task 5 分类器训练/导出/服务验收
+当前优先：Task 0（分类器基线）→ Task 4 → Task 5（原有v1数据训练/导出/服务验收）
+Task 3新增数据独立后置，不是Task 5恢复服务的前置条件。
 Task 1 + Task 2 + Task 3 + Task 5 → Task 6 全链路评测
 Task 6 → Task 8 最终回归与文档
 ```
@@ -280,6 +301,7 @@ Task 6 → Task 8 最终回归与文档
 - Modify: `scripts/ch10/export_onnx.py`
 - Modify: `scripts/ch10/scan_threshold_replay.py`
 - Modify: `app/api/acceptance.py`
+- Modify: `.gitignore`（只放行数据/模型清单，继续忽略大文件）
 - Create: `scripts/ch10/artifact_manifest.py`
 - Create: `scripts/ch10/fetch_model.py`
 - Create: `data/ch10/artifact-manifest.example.json`
@@ -300,7 +322,7 @@ Task 6 → Task 8 最终回归与文档
   为数据增加旁挂manifest，记录现有2594/161/161的来源缺失事实；后续新样本必须记录真实、人工编写、合成或增强来源。
 
 - [ ] **Step 4: 设计大文件分发方式**
-  优先对象存储或GitHub Release；若后续建立支持LFS的远端才使用Git LFS。普通Git中只提交manifest、下载器和报告，不提交约409MB ONNX。
+  本批次先生成本地manifest及可复跑训练命令；对象存储/GitHub Release上传与下载器后置。普通Git中只提交manifest、代码和报告，不提交模型大文件。
 
 - [ ] **Step 5: 提交资产管理代码**
   Commit: `build: make classifier artifacts reproducible`
@@ -325,14 +347,14 @@ Task 6 → Task 8 最终回归与文档
 - `make classifier-bootstrap`：已有且哈希正确则直接使用；否则按manifest下载；没有URI时给出 `make ch10-train && make ch10-export` 的明确指引。
 - `make classifier-up`：启动前校验 `model.onnx`、`tokenizer.json`、`threshold.json` 和manifest。
 
-- [ ] **Step 1: 扩大分类器独立测试支持数**
-  测试集至少保证17类每类20个正例，并保留一份从未参与阈值扫描的真实/人工独立集；报告bootstrap 95%置信区间。
+- [ ] **Step 1: 冻结现有分类器v1数据**
+  核验原有2594/161/161及17类顺序、标签、分割交叉、重复与SHA256；保留原数据。扩大独立测试支持数的任务移交Task 3，在新一轮训练之前先冻结新数据版本。
 
 - [ ] **Step 2: 训练并记录环境**
-  Run: `uv run --group ml python scripts/ch10/train.py --data-dir dataset`
+  Run: `uv run --group ml python -m scripts.ch10.train --data-dir dataset`
   Expected: 生成模型、阈值和完整训练配置。
 
-- [ ] **Step 3: 在独立测试集评估**
+- [ ] **Step 3: 在现有v1测试集评估**
   Run: `make ch10-eval`
   Expected: 输出micro/macro及每类P/R/F1、支持数、错误样本和置信区间。
 
@@ -342,9 +364,9 @@ Task 6 → Task 8 最终回归与文档
 
 - [ ] **Step 5: 启动服务并验收旁路**
   Run: `make classifier-up && curl -fsS http://127.0.0.1:8110/healthz`
-  再执行 `make classify-pool FORCE=1`，验证 `topic_classifications` 有真实写入且第二次运行幂等。
+  使用隔离测试库和真实分类服务验证旁路写入与第二次运行幂等；不向业务问题池新增评测样本。
 
-- [ ] **Step 6: 上传模型资产并回下载复验**
+- [ ] **Step 6（后置）: 上传模型资产并回下载复验**
   从空的 `data/ch10/onnx/` 状态执行bootstrap，校验下载后服务可启动。
 
 - [ ] **Step 7: 提交报告和manifest**
@@ -468,7 +490,7 @@ Task 6 → Task 8 最终回归与文档
 
 ## 执行建议
 
-- 推荐先执行Task 1，因为它已有明确根因，风险集中且会污染后续所有多轮评测。
-- Task 1完成后，Task 2、Task 3、Task 4可以并行推进。
+- 当前先执行分类器范围的Task 0 → Task 4 → Task 5；不等待新增评测数据。
+- 分类器恢复后执行Task 1，再推进Task 2与Task 3；Task 1修复完成前不运行多轮发布评测。
 - Task 7已先行完成；后续所有命令、文档和代码路径都以 `EcomAgent/` 为仓库根。
-- 除已获准并完成的Task 7外，开始其他业务编码前仍应确认计划中的业务边界和评测规模是否符合预期。
+- 当前用户已授权分类器实现、训练与服务验收；其他业务按后续批次实施。
