@@ -19,6 +19,7 @@ def _builder(nodes=nodes, route_by_intent=route_by_intent) -> StateGraph:
     b.add_node("fallback_reply", nodes.fallback_reply)
     b.add_node("fetch_order", nodes.fetch_order)
     b.add_node("retrieve_policy", nodes.retrieve_policy)
+    b.add_node("prepare_business_context", nodes.prepare_business_context)
     b.add_node("log", nodes.log_node)
 
     # 骨架:消解 → 意图 → 分流
@@ -29,11 +30,13 @@ def _builder(nodes=nodes, route_by_intent=route_by_intent) -> StateGraph:
         "fallback_script": "script_reply",
         "knowledge": "retrieve_knowledge",
         "refund_flow": "fetch_order",
-        "business": "main_agent",
+        "business": "prepare_business_context",
     })
+    # business 出口先确定性准备商品/订单/物流事实,再交给 Agent 组织回答
+    b.add_edge("prepare_business_context", "main_agent")
     # 退款子流程确定性链:取单 → 检索政策 → 交主力 Agent 判能不能退
     b.add_edge("fetch_order", "retrieve_policy")
-    b.add_edge("retrieve_policy", "main_agent")
+    b.add_edge("retrieve_policy", "prepare_business_context")
     # 知识路:检索 → 生成前证据闸
     b.add_edge("retrieve_knowledge", "confidence_check")
     b.add_conditional_edges("confidence_check", confidence_gate, {

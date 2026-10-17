@@ -79,6 +79,68 @@ async def fetch_order(state) -> dict:
             "trace": {"fetch_order": {"order_id": oid}}}
 
 
+def _catalog_category(text: str) -> str | None:
+    """从「有什么玩具/猫粮有哪些」里认出目录品类;没有明确品类返回 None(=浏览全部)。"""
+    from app.tools.catalog import categories
+    compact = "".join((text or "").split())
+    for name in categories():
+        if name in compact:
+            return name
+    return None
+
+
+async def prepare_business_context(state) -> dict:
+    """business 出口的确定性前置:进 Agent 之前先把商品目录、本人订单或物流事实查好。
+
+    只读,不调用模型。Agent 只能组织这里(或它后续工具调用)已有的事实:
+    - 目录浏览/购买诉求 → 真实目录商品(目录里没有就明确不销售)
+    - 本人订单列表 → 当前 user_id 名下的订单(空身份不给)
+    - 报了订单号 → 先过归属校验;不是本人的单只回"没找到",绝不把他人订单/物流单号交给模型
+    物流单号只从本人订单里取,不直接信任用户输入。"""
+    from app.graph.routing import is_buy_request, is_catalog_browse, is_order_listing
+    from app.tools import catalog as catalog_mod
+
+    text = state.get("resolved_query") or _user_text(state)
+    uid = state.get("user_id", "")
+    query = "".join((text or "").split())
+    if is_order_listing(query):
+        if not uid:
+            ctx = {"kind": "orders", "orders": [], "message": "缺少身份信息,无法列出订单"}
+        else:
+            ctx = {"kind": "orders", "orders": business.list_user_orders(uid)}
+        return {"business_context": ctx, "order_data": {},
+                "suggested_actions": [{"type": "select_order", "orders": ctx["orders"]}]
+                if ctx["orders"] else [],
+                "trace": {"business_context": "orders"}}
+
+    oid = _extract_order_id(text)
+    if oid:
+        if not business.owns_order(uid, oid):
+            ctx = {"kind": "order_not_owned", "order_id": oid,
+                   "message": "没有找到您的这笔订单"}
+            return {"business_context": ctx, "order_data": {},
+                    "suggested_actions": [{"type": "select_order",
+                                           "orders": business.list_user_orders(uid)}],
+                    "trace": {"business_context": "order_not_owned"}}
+        data = business.order_snapshot(oid)
+        wants_logistics = any(w in query for w in ("物流", "快递", "到哪", "发货", "运输"))
+        ctx = {"kind": "logistics" if wants_logistics else "order", "order": data}
+        if wants_logistics:
+            ctx["tracking_no"] = data["tracking_no"]
+        return {"business_context": ctx, "order_data": data,
+                "trace": {"business_context": ctx["kind"]}}
+
+    category = _catalog_category(text)
+    if is_catalog_browse(query) or is_buy_request(query) or category:
+        products = [catalog_mod.public_product(p)
+                    for p in catalog_mod.browse_products(category)]
+        ctx = {"kind": "products", "category": category, "products": products}
+        if not products:
+            ctx["message"] = f"商品目录中没有“{category or query}”,当前不销售该类商品。"
+        return {"business_context": ctx, "trace": {"business_context": "products"}}
+    return {"business_context": {}, "trace": {"business_context": "none"}}
+
+
 async def retrieve_policy(state) -> dict:
     """退款子流程强制检索政策:Query 扩写 3 条 → 多 query 各检索一次 → 按 chunk id 去重合并
     (保留每 id 最高分)→ 按分降序拼编号证据。产出注入 main_agent 作「能不能退」的判据(README L194:
@@ -244,6 +306,13 @@ def _turn_context(state) -> str:
         parts.append(_KNOWLEDGE_EVIDENCE_HINT + state["evidence"])
     if state.get("route") == "refund_flow":
         parts.append(REFUND_JUDGE_HINT + json.dumps(state.get("order_data", {}), ensure_ascii=False))
+    ctx = state.get("business_context") or {}
+    if ctx:
+        parts.append("\n\n【本轮确定性业务事实(只读,回答只能依据这些)】\n"
+                     + json.dumps(ctx, ensure_ascii=False)
+                     + "\n不要编造上面没有的商品、价格、库存、订单或物流信息。"
+                     "客服不能代下单、不能收集收货地址;已查到商品时,"
+                     "请引导用户前往商品页或商城自行下单。")
     return "".join(parts)     # 三段文本逐字沿用原来的常量,一个字都不改:这次只挪位置,
                               # 措辞一起动的话出了问题分不清是缓存改动还是提示词改动
 

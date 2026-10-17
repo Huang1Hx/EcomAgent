@@ -51,6 +51,25 @@ def search_products(query: str, limit: int = 5) -> list[dict]:
     return (primary_exact or matches)[:limit]
 
 
+def browse_products(category: str | None = None, limit: int | None = None) -> list[dict]:
+    """只读浏览版本控制目录:按品类(目录 category 精确匹配)列出,不按用户输入生成商品。
+    无匹配品类返回空列表——"不卖"由调用方明确表达,不在这里兜底造货。"""
+    products = list(load_products())
+    needle = _norm(category) if category else ""
+    if needle:
+        products = [p for p in products if _norm(p["category"]) == needle]
+    return products if limit is None else products[:max(0, limit)]
+
+
+def categories() -> list[str]:
+    """目录现有品类(按首次出现顺序,稳定可复现)。"""
+    seen: list[str] = []
+    for product in load_products():
+        if product["category"] not in seen:
+            seen.append(product["category"])
+    return seen
+
+
 def public_product(product: dict) -> dict:
     """只返回客服回答所需字段，不把内部别名配置暴露给模型。"""
     return {

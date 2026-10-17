@@ -227,33 +227,50 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 - Produces node: `prepare_business_context(state: ConversationState) -> dict`，在 `business` 出口进入 `main_agent` 前确定性准备商品、订单或物流所需事实，并写入 `business_context`/`order_data`/`suggested_actions`。
 - 保持: `query_order` 的用户归属校验和 `query_product` 的 `found=false` 语义。
 
-- [ ] **Step 1: 写商品浏览失败测试**
+- [x] **Step 1: 写商品浏览失败测试**
   覆盖“你们卖什么”“有什么玩具”“猫粮有哪些”；断言返回真实目录数据，而不是走知识库拒答。
+  Result (2026-10-17, Task 2): `tests/test_catalog_browse.py` 覆盖全部品类/按品类/未知品类/limit 与 `list_products` 工具;目录25件。
 
-- [ ] **Step 2: 写订单列表失败测试**
+
+- [x] **Step 2: 写订单列表失败测试**
   断言 `list_orders` 只返回注入用户自己的订单，并包含1001/2002；空身份返回空列表或明确身份错误。
+  Result: `tests/test_order_listing.py` 覆盖本人订单、空身份、稳定形状;`list_orders` 已注册且 `user_id` 注入、模型不可见。
 
-- [ ] **Step 3: 写路由边界失败测试**
+
+- [x] **Step 3: 写路由边界失败测试**
   “我要买幼猫粮”“帮我下单”“你们卖什么”应进入 `business`；“猫粮怎么选”仍走知识RAG；“汽水多少钱”进入目录查询并返回不销售。
+  Result: `tests/graph/test_route_business_boundary.py`;“你们卖什么/有什么玩具/猫粮有哪些/我要买幼猫粮/帮我下单/查看我的订单”走 business,“猫粮怎么选/猫粮怎么保存”仍走 RAG,“汽水多少钱”进目录查询并返回不销售。
 
-- [ ] **Step 4: 实现两个只读工具并注册**
+
+- [x] **Step 4: 实现两个只读工具并注册**
   不新增订单表，不新增支付写操作；`list_products`只读版本控制目录，`list_orders`只读当前mock适配层。
+  Result: `catalog.browse_products/categories` + 只读工具 `list_products`、`list_orders`(均 permission=read);未新增订单表或支付写操作。
 
-- [ ] **Step 5: 增加business确定性前置节点**
+
+- [x] **Step 5: 增加business确定性前置节点**
   将 `business` 条件边改为 `prepare_business_context -> main_agent`；商品查询先查目录，订单查询先校验归属或列出本人订单，物流查询先得到本人订单和物流单号。Agent只能组织已有事实或继续调用必要的物流工具，不能跳过前置检查。
+  Result: 新增 `prepare_business_context`,业务出口 `classify_intent → prepare_business_context → main_agent`,退款链 `retrieve_policy → prepare_business_context → main_agent`;事实以“本轮确定性业务事实”注入 Agent 窗口;外单只回“没有找到”且不交出物流单号(`tests/graph/test_business_context.py`)。
 
-- [ ] **Step 6: 修正Agent承诺边界**
+
+- [x] **Step 6: 修正Agent承诺边界**
   明确客服不能代下单、不能收集地址；查到商品后给出“前往商品页/商城下单”的建议，不说“我可以帮您下单”。
+  Result: `AGENT_SYSTEM` 增加 list_products/list_orders 用法与“不能代下单/不收集地址/引导去商品页下单”的边界。
 
-- [ ] **Step 7: 更新聊天页示例问题**
+
+- [x] **Step 7: 更新聊天页示例问题**
   增加“你们卖什么”“查看我的订单”“查订单1001物流”，让用户能发现可演示能力。
+  Result: 聊天页 `SUGGESTIONS` 改为“退换货政策是怎样的?/你们卖什么/查看我的订单/查订单1001物流”。
 
-- [ ] **Step 8: 运行工具、路由、图结构和安全测试**
+
+- [x] **Step 8: 运行工具、路由、图结构和安全测试**
   Run: `uv run pytest -q tests/test_tools_mock.py tests/tools/test_order_ownership.py tests/graph/test_routing.py tests/graph/test_build.py tests/test_eval_agent_report.py tests/test_prompts.py`
   Expected: PASS，跨用户订单仍被拒绝，且图结构断言 `business` 不能直接进入 `main_agent`。
+  Result: 定向 37 项通过;全量 `566 passed, 2 skipped`;真实回放(`user_id=t2-probe`):你们卖什么/有什么玩具→真实目录,查看我的订单→本人订单+select_order,汽水多少钱→query_product 不销售,查订单1001物流→本人订单单号查物流;“猫粮怎么选”按设计仍走 RAG,当前证据弱被兜底(知识库内容边界,非路由错误)。
 
-- [ ] **Step 9: 提交**
+
+- [x] **Step 9: 提交**
   Commit: `feat: add safe catalog browsing and order listing`
+  Commit: 提交 SHA 见最终汇报(提交信息 `feat: add safe catalog browsing and order listing`)。
 
 ---
 

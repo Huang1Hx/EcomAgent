@@ -17,11 +17,28 @@ INTENT_TO_ROUTE: dict[str, str] = {
     "订单": "business",
 }
 
+# 浏览店铺在售商品:目录类问题不能走知识 RAG(知识库里没有商品清单),也不该被当成
+# 「商品咨询」去查规格。命中即进 business,由 list_products 读版本控制目录回答。
+_CATALOG_BROWSE_WORDS = (
+    "卖什么", "卖哪些", "卖的有哪些", "有什么卖", "在卖什么", "都卖什么", "都卖哪些",
+    "有哪些商品", "有什么商品", "有哪些产品", "有什么产品",
+)
+_CATALOG_CATEGORY_WORDS = ("玩具", "猫粮", "狗粮", "猫砂", "用品", "商品", "产品")
+_ORDER_LIST_WORDS = ("我的订单", "查看订单", "订单列表", "查我的订单", "我有哪些订单",
+                     "我的全部订单", "我的单子")
+_BUY_WORDS = ("我要买", "我想买", "帮我下单", "直接下单", "给我下单", "买一个", "买一袋")
+
 
 def route_by_intent(state) -> str:
     """按意图分流;未知意图保守归 business(让 Agent 自己应对)。"""
     intent = state.get("intent", "")
-    if intent == "商品咨询" and is_product_lookup(_query_text(state)):
+    query = _query_text(state)
+    if intent == "商品咨询":
+        if is_catalog_browse(query) or is_product_lookup(query):
+            return "business"
+    if is_order_listing(query):
+        return "business"
+    if is_buy_request(query):
         return "business"
     return INTENT_TO_ROUTE.get(intent, "business")
 
@@ -48,6 +65,30 @@ def is_product_lookup(query: str) -> bool:
     if any(word in compact for word in _PRODUCT_LOOKUP_WORDS):
         return True
     return compact.startswith("有") and compact.rstrip("?？").endswith("吗") and "什么" not in compact
+
+
+def is_catalog_browse(query: str) -> bool:
+    """「你们卖什么/有什么玩具/猫粮有哪些」= 浏览目录,不是查某件商品规格。"""
+    compact = "".join((query or "").split()).rstrip("?？。!")
+    if any(word in compact for word in _CATALOG_BROWSE_WORDS):
+        return True
+    # 「有什么X」:X 是品类词(玩具/猫粮…),问的是目录里有没有这一类
+    if compact.startswith("有什么") and any(w in compact for w in _CATALOG_CATEGORY_WORDS):
+        return True
+    # 「X有哪些」:有品类词 + 有哪些
+    if compact.endswith("有哪些") and any(w in compact for w in _CATALOG_CATEGORY_WORDS):
+        return True
+    return False
+
+
+def is_order_listing(query: str) -> bool:
+    compact = "".join((query or "").split())
+    return any(word in compact for word in _ORDER_LIST_WORDS)
+
+
+def is_buy_request(query: str) -> bool:
+    compact = "".join((query or "").split())
+    return any(word in compact for word in _BUY_WORDS)
 
 
 def confidence_gate(state) -> str:

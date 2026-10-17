@@ -50,3 +50,15 @@ async def test_query_product_缺货商品与不存在商品语义不同():
     assert out["found"] is True
     assert out["products"][0]["stock"] == 0
     assert out["products"][0]["in_stock"] is False
+
+
+async def test_list_products_and_list_orders_registered():
+    from app.tools import registry
+    by = {s.name: s for s in registry.builtin_specs()}
+    assert {"list_products", "list_orders"} <= set(by)
+    assert by["list_products"].inject_user_id is False
+    assert by["list_orders"].inject_user_id is True
+    assert all(s.permission == "read" for s in (by["list_products"], by["list_orders"]))
+    props = by["list_orders"].json_schema.get("properties", {})
+    assert "user_id" not in props   # 身份由引擎注入,模型不可见
+

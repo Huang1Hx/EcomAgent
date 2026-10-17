@@ -57,6 +57,11 @@ async def _fallback_reply(state):
             "trace": {"route": "fallback_script"}}
 
 
+async def _prepare_business_context(state):
+    """Task 2 起 business 出口先过确定性前置节点;本用例只关心消息配对。"""
+    return {"business_context": {}}
+
+
 @pytest.fixture()
 def fake_nodes(monkeypatch):
     model = ScriptedModel(replies=["已为您查询订单物流。"])
@@ -78,6 +83,7 @@ def fake_nodes(monkeypatch):
         "resolve_reference": _resolve_reference,
         "retrieve_knowledge": _retrieve_knowledge,
         "fallback_reply": _fallback_reply,
+        "prepare_business_context": _prepare_business_context,
         "main_agent": main_agent,
     })
 

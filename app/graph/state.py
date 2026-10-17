@@ -28,6 +28,7 @@ class ConversationState(TypedDict, total=False):
     order_id: str          # refund_flow:抽到/点选回填的订单号
     order_data: dict       # refund_flow:query_order 查到的订单数据
     route: str             # knowledge | business | complaint | chitchat
+    business_context: dict # Task 2: business 出口进 Agent 前确定性准备的事实(products/orders/logistics…)
     evidence: str          # 知识路编号证据文本
     citations: list        # 引用 chunk(前端可点)
     evidence_strong: bool  # 生成前证据闸信号
