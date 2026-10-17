@@ -1,0 +1,145 @@
+{
+  "captured_at": "2026-10-17T20:58:57",
+  "git_sha": "7fc8ae9610379b6c443ceb42219d2162957cb9b9",
+  "dirty_paths": [
+    "M data/ch10/reports/golden_report.json",
+    " M data/ch10/reports/threshold_scan.json",
+    "?? scripts/eval/"
+  ],
+  "models": {
+    "chat_model": "deepseek-ai/DeepSeek-V4-Flash",
+    "chat_base_url": "https://api.siliconflow.cn/v1",
+    "intent_model": "deepseek-ai/DeepSeek-V4-Flash",
+    "embed_model": "BAAI/bge-m3",
+    "rerank_model": "BAAI/bge-reranker-v2-m3",
+    "keys_present": {
+      "CHAT_API_KEY": true,
+      "EMBED_API_KEY": true,
+      "RERANK_API_KEY": true
+    },
+    "thresholds": {
+      "evidence_confidence_threshold": 0.26,
+      "rerank_min_score": 0.3,
+      "intent_conf_threshold": 0.6
+    }
+  },
+  "kb_chunks": {
+    "collection": "knowledge",
+    "vectors": 52
+  },
+  "datasets": {
+    "tests/data/eval_ch04.jsonl": {
+      "samples": 300,
+      "sha256": "8029ec710a3275fa772748dd23d65dbf26ad7cb3c45958dfe8855cb982465d44"
+    },
+    "tests/data/query_rewrite_samples.jsonl": {
+      "samples": 5,
+      "sha256": "8efd87170dee339c69591869a670696a99a8659a203f8e0103b8757dc115ee4c"
+    }
+  },
+  "services": {
+    "app": {
+      "up": true,
+      "status": 200
+    },
+    "classifier": {
+      "up": true,
+      "status": 200,
+      "bundle_sha256": "13e05e9f0477888a0f2fc8bbbb548189759429d5bcd7c98265532005127a04a4"
+    },
+    "logistics_mcp": {
+      "up": true,
+      "status": 406
+    },
+    "aftersales_mcp": {
+      "up": true,
+      "status": 406
+    }
+  },
+  "tests": {
+    "returncode": 0,
+    "passed": 529,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 2,
+    "tail": [
+      "........................................................................ [ 94%]",
+      "...........................                                              [100%]",
+      "529 passed, 2 skipped in 65.66s (0:01:05)"
+    ]
+  },
+  "replay": [
+    {
+      "label": "商品浏览",
+      "request": {
+        "user_id": "baseline-probe",
+        "message": "你们卖什么",
+        "conversation_id": null
+      },
+      "status": 200,
+      "response": {
+        "conversation_id": 25,
+        "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+        "tool_calls": [],
+        "tool_results": [],
+        "suggested_actions": [
+          {
+            "type": "transfer_human"
+          }
+        ],
+        "interrupt": null
+      }
+    },
+    {
+      "label": "我的订单",
+      "request": {
+        "user_id": "baseline-probe",
+        "message": "查看我的订单",
+        "conversation_id": 25
+      },
+      "status": 200,
+      "response": {
+        "conversation_id": 25,
+        "answer": "你好呀！我是「喵喵优选」的智能客服小喵～ 我们平台主营宠物用品、居家生活好物等各类商品，具体某个商品的库存和价格你可以告诉我名称，我来帮你查。\n\n关于「查看我的订单」，麻烦把**订单号**发给我（比如订单号是 1001），我这就帮你查订单情况哦～ 😊",
+        "tool_calls": [],
+        "tool_results": [],
+        "suggested_actions": [],
+        "interrupt": null
+      }
+    },
+    {
+      "label": "知识拒答",
+      "request": {
+        "user_id": "baseline-probe",
+        "message": "今天天气怎么样",
+        "conversation_id": 25
+      },
+      "status": 200,
+      "response": {
+        "conversation_id": 25,
+        "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+        "tool_calls": [],
+        "tool_results": [],
+        "suggested_actions": [],
+        "interrupt": null
+      }
+    },
+    {
+      "label": "拒答后订单查询",
+      "request": {
+        "user_id": "baseline-probe",
+        "message": "我的订单到哪了",
+        "conversation_id": 25
+      },
+      "status": 200,
+      "response": {
+        "conversation_id": 25,
+        "answer": "天气这样的问题不在小喵的业务范围内啦，我还是专注于帮您处理购物相关的事～ 😊\n\n关于「订单到哪了」，我需要您提供**订单号**才能帮您查询哦（比如订单号是 1001）。您把订单号发给我，我这就帮您查物流到哪了！",
+        "tool_calls": [],
+        "tool_results": [],
+        "suggested_actions": [],
+        "interrupt": null
+      }
+    }
+  ]
+}

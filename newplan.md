@@ -141,18 +141,22 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 - Consumes: 当前Git状态、模型配置、知识库块数、各评测集文件。
 - Produces: `baseline.json`，供后续报告比较，字段固定为 `git_sha`、`dirty_paths`、`models`、`kb_chunks`、`datasets`、`services`。
 
-- [ ] **Step 1: 记录基线清单**
+- [x] **Step 1: 记录基线清单**
   仅记录密钥是否存在，不输出密钥内容；对所有评测JSONL记录实际样本数和SHA256。
+  Result (2026-10-17, Task 5A 之后): `data/eval/manifests/baseline.json`(采集器 `scripts/eval/baseline.py`);`git_sha=7fc8ae9`;`tests/data/eval_ch04.jsonl` 300条 sha256 `8029ec71…`、`query_rewrite_samples.jsonl` 5条 sha256 `8efd8717…`;Milvus `knowledge` 52 向量;密钥仅记存在性(CHAT/EMBED/RERANK=true)。
 
-- [ ] **Step 2: 运行当前可运行的单元测试**
+- [x] **Step 2: 运行当前可运行的单元测试**
   Run: `uv run pytest -q`
   Expected: 记录通过、失败、依赖服务错误三种数量，不把服务错误写成测试通过。
+  Result: `529 passed, 2 skipped`(returncode 0),failed=0、errors=0;2条 skip 为分类器 live 测试(`RUN_CLASSIFIER_LIVE` 未设,不冒充通过)。
 
-- [ ] **Step 3: 对现有在线流程做基线回放**
+- [x] **Step 3: 对现有在线流程做基线回放**
   固定同一 `user_id` 和新会话，回放商品浏览、我的订单、知识拒答、拒答后订单查询四组对话，保存请求与结构化响应。
+  Result: `user_id=baseline-probe` 新会话4轮全部 HTTP 200;商品浏览走知识路拒答+`transfer_human`、我的订单/查询只追问订单号(无订单列表工具)、知识拒答正常;**拒答后订单查询复现串答**:回复先复述上一轮“天气…不在业务范围”,再回答本轮订单。原始请求/响应存于 `baseline.json.replay`。
 
-- [ ] **Step 4: 审核并提交基线文件**
+- [x] **Step 4: 审核并提交基线文件**
   只提交 `data/eval/manifests/baseline.json`，不得带入现有脏文件。
+  Result: 提交 `57ff0dc`;仅含基线清单、采集器与两个只读测试,未带入 `golden_report.json`/`threshold_scan.json`。
 
 ---
 
