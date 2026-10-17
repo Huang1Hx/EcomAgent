@@ -156,7 +156,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 
 - [x] **Step 4: 审核并提交基线文件**
   只提交 `data/eval/manifests/baseline.json`，不得带入现有脏文件。
-  Result: 提交 `57ff0dc`;仅含基线清单、采集器与两个只读测试,未带入 `golden_report.json`/`threshold_scan.json`。
+  Result: 提交 `21ae18c`;仅含基线清单、采集器与两个只读测试,未带入 `golden_report.json`/`threshold_scan.json`。
 
 ---
 
