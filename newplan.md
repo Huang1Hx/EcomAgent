@@ -6,20 +6,20 @@
 
 **Architecture:** 保持在线九类意图路由、LangGraph 主链和17类离线主题分类器彼此独立。商城能力通过受控的演示商品目录和用户订单查询接口提供，客服只查询和引导，不承担真实支付下单；所有指标使用开发集、校准集、独立测试集分离后的报告。目录扁平化已在业务改造前独立完成，后续路径统一以仓库根为基准。
 
-**Tech Stack:** Python 3.12、FastAPI、LangGraph/LangChain、MySQL、Milvus、ONNX Runtime、pytest、Docker Compose、uv。
+**Tech Stack:** Python 3.12+、FastAPI、LangGraph/LangChain、MySQL、Milvus、ONNX Runtime、pytest、Docker Compose、uv。
 
 **Spec:** 本文件的“需求基线”和“设计决策”即本轮获准的自包含规格；用户要求本轮不另写规格文件。
 
-## 当前执行批次：先恢复分类器（2026-10-15）
+## 当前状态与执行批次：分类器已恢复、Task 5A 已完成，业务改造与评测数据推进中（2026-10-17）
 
-用户已授权先写好计划，再在专用分支训练分类器。当前工作分支为 `feat/classifier-restoration`，起点 `0de8e19`；先执行分类器范围的基线、Task 4 和 Task 5。Task 1、2、3、6、8 的其他业务改造与新增评测数据后置。
+用户已授权先写好计划，再在专用分支训练分类器。当前工作分支为 `feat/classifier-restoration`，起点 `0de8e19`；分类器范围的基线、Task 4 和 Task 5 已完成本地训练与隔离验收，但远程模型分发仍待做。Task 5A 已用业务库中**已有**问题联通飞轮评审与主题分布（2026-10-17 执行，见下方 Task 5A 结果）。后续执行批次为：Task 0 新基线 → Task 1 拒答后跨轮串答修复 → Task 2 商品浏览与本人订单只读能力 → Task 3 分层评测数据与数据合同 → Task 4 Step 4 / Task 5 Step 6 模型远程分发与空目录下载校验 → Task 6 全链路评测 → Task 8 干净环境部署、回归与文档。
 
 - 使用原有 `dataset/{train,val,test}.jsonl`（2594/161/161），保持内容和划分不变。冻结哈希、17类顺序、逐类支持数和精确重叠检查，记录血缘信息缺失；测试结果标为现有 v1 数据集回归结果。
 - 顺序固定为：现有数据核验与冻结 → 脚本统一数据目录 → 训练（仅train）与轮次/阈值选择（仅val）→ test评测 → ONNX导出及服务一致性 → 旁路联调 → 审核与提交。
 - 训练默认沿用 RoBERTa 全参微调配置：学习率 `2e-5`、训练batch 16、最多8轮、早停耐心2、种子42；记录实际设备、依赖版本、基座revision、参数、代码SHA、耗时和最优轮次。资源不足时记录原因再调整batch，不根据test分数调参。
 - 本批次完成本地模型资产清单、完整文件哈希、启动前校验及可复跑训练命令。对象存储/Release上传、下载器和新的独立测试数据作为后续交付，不阻塞本地训练和服务恢复。
 - 训练/评测/ONNX产物使用同一数据版本和标签顺序；模型、tokenizer、阈值任一不匹配应非零退出。服务探活应暴露产物版本；启动失败不得仅打印文字后返回成功。
-- 保护 `data/ch10/reports/golden_report.json`；旧评测报告先归档再生成本次报告。旁路验收使用测试数据库与已有样本的临时副本，禁止为了验证而向业务问题池灌入评测数据。
+- 保护 `data/ch10/reports/golden_report.json` 和 `data/ch10/reports/threshold_scan.json`；旧评测报告先归档再生成本次报告。旁路验收使用测试数据库与已有样本的临时副本，禁止为了验证而向业务问题池灌入评测数据。
 - 当前批次验收：可复跑训练、真实模型权重、test实测结果、Torch/ONNX/HTTP一致性、服务健康、旁路幂等测试、相关测试及完整回归；历史96.4%不作为硬性训练目标。
 
 执行记录（仅凭实际结果勾选）：
@@ -32,17 +32,25 @@
 
 本次代码审核提出的服务版本复用、失败导出保留旧包和阈值重演版本校验问题已补失败测试并修复。对外只能称“现有v1测试集回归”；新增盲测、远程模型分发和其他业务任务仍按下方未勾选任务推进。
 
+执行前（Task 5A 之前）业务页空白的只读核验快照（2026-10-17；已被 Task 5A 结果取代，仅留作时间/证据边界，不代表当前状态）：
+
+- `/api/review/queue` 返回 `items=[]`，`/api/topics/distribution` 返回 `total=0`；接口正常，非页面渲染失败。业务库有9条 `low_confidence_questions`，9条均未归并，`review_queue=0`、`topic_classifications=0`。
+- `make classifier-up` 只启动后台推理服务 `:8110`；训练用 `dataset/` 不会自动写入业务问题池。review需先运行 `make flywheel` 归并；topics只读取已归并问题经 `make classify-pool` 写入的结果。默认批量门槛10条，当前9条即使归并后也需按实际待分类数决定是否使用 `FORCE=1`。
+- 本机可通过 `http://127.0.0.1:8000/acceptance/eval` 单句试分类；这只能证明服务推理可用，不代表飞轮业务库已有归类记录。模型/ONNX大文件仍仅在本机、被Git忽略；远端清单的 `artifact_uri=null`，只克隆仓库的新环境不能直接启动分类器，可复制完整校验过的ONNX包或待远程分发完成后下载。
+- Task 5A 执行后（2026-10-17 重查并跑批）：9条问题全部归并出4个待审项（`review_queue=4`,全部 `待审`）,`make classify-pool FORCE=1` 写入 `topic_classifications=9`（`其他=8`、`库存补货=1`）;`/api/review/queue` 返回4条、`/api/topics/distribution.total=9`;第二次 `make flywheel`/`classify-pool` 零增量,本批幂等。未自动审核、未写回知识库、未新增评测数据。业务库已不再是“全空白”,本快照仅记执行时点,后续仍以实时重查为准。
+
 ## Global Constraints
 
-- 2026-10-14已完成Git根目录迁移并把原外层数据集纳入仓库根 `dataset/`；除迁移所需Compose配置与本计划外，尚未修改业务代码和现有数据。
-- 保留用户已有未提交内容：`data/ch10/reports/golden_report.json`，任何任务不得覆盖或顺手提交；本地非项目记录与部署草稿由 Git 排除规则保护。
+- 2026-10-14已完成Git根目录迁移并把原外层数据集纳入仓库根 `dataset/`；分类器恢复代码和报告已在 `feat/classifier-restoration`，Task 1、2、3等业务改造仍未实施。
+- 保留用户已有未提交内容：`data/ch10/reports/golden_report.json` 和 `data/ch10/reports/threshold_scan.json`；任何任务不得覆盖或顺手提交。本地非项目记录与部署草稿由 Git 排除规则保护。
+- Task 5A 只能使用业务库已有问题，执行前重查并备份相关业务数据；不得把训练/评测样本灌入真实问题池，也不得为填满页面而伪造问答、自动通过审核或写回知识库。
 - 不降低订单归属校验，不允许通过订单号枚举他人订单；未知商品必须继续返回未找到，不能生成虚假价格或库存。
 - 不实现真实支付、库存扣减或地址收集；客服只提供商品查询、订单列表/详情、物流查询和跳转商城的建议动作。
 - 在线九类意图路由继续由主链负责；17类RoBERTa仅服务飞轮问题的离线主题归类，不接管在线意图路由。
 - 实施后必须保持本 EcomAgent 项目的七条技术主线：混合检索、四信号幻觉治理、九类到五出口、三层上下文、三入口飞轮、17类多标签分类器、评估驱动优化；商品/订单补强只能作为演示与验收支撑，不能把项目改造成商城交易系统而冲淡客服主线。
 - 任何发布指标必须来自当前代码、当前模型和冻结数据集的重新运行，报告必须带 git SHA、数据集SHA256、知识库快照、模型版本和时间。
 - 历史指标只作为待复验基线，不是开发验收的硬编码答案；如果独立测试结果不同，按当前报告更新数字与口径，禁止通过改答案、泄漏盲测集或放宽判定规则迎合预设结果。
-- 每个任务按测试失败→最小实现→测试通过→独立审核→提交的顺序执行，不得把多个任务混入一次提交。
+- 代码任务按测试失败→最小实现→测试通过→独立审核→提交的顺序执行，不得把多个任务混入一次提交；Task 5A 为现有业务数据的受控跑批验收，按快照/备份→前置检查→分步执行→只读核对→复跑幂等执行，不改业务代码。
 
 ## Review Focus
 
@@ -50,6 +58,7 @@
 - “我的订单”只能列当前 `user_id` 名下订单；任意不存在或不归属订单仍不得泄露状态、金额和物流单号。
 - “你们卖什么”“有什么玩具”“我要买幼猫粮”等表达应进入商品目录能力；“汽水”仍应明确当前不销售。
 - 分类器数据、阈值、模型和ONNX必须来自同一版本；任一SHA不匹配时服务应拒绝启动并给出可操作错误。
+- review/topics 的业务条目须追溯到已有低置信度问题的归并和分类结果；服务健康或训练集成绩都不能代替真实业务写库验收。
 - 目录扁平化后必须继续使用原MySQL/Milvus数据卷，不能因Compose项目名变化造成“数据消失”。
 
 ---
@@ -62,16 +71,20 @@
    - 飞轮评测复用RAG 300题，只验证指标趋势，没有验证“拒答→入池→归并→审核→写回→再次可答”。
    - 分类器数据实际为2594/161/161；测试集17类每类只有9–14个正例，且JSONL没有来源、审核状态等血缘字段。
 
-2. **分类器只有代码和历史报告，没有模型资产**
-   - 训练脚本读 `data/ch10/dataset/`，而现有数据位于仓库根 `dataset/`，当前没有接线。
-   - `data/ch10/model/` 和 `data/ch10/onnx/` 被 `.gitignore` 排除，`classifier-up` 会因缺少 `model.onnx` 失败。
+2. **分类器训练前只有代码和历史报告，没有模型资产（本机已恢复；远端分发待办）**
+   - 原脚本的数据路径错位已修复，现统一读取仓库根 `dataset/`；本机已有训练权重和经校验的ONNX包，`make classifier-up` 可启动推理服务。
+   - `data/ch10/model/` 和 `data/ch10/onnx/` 继续被 `.gitignore` 排除；仅从Git克隆的新环境没有模型文件。Task 4 Step 4 / Task 5 Step 6 完成远程分发前，须手动复制完整ONNX包并校验，或在新环境重训，不能宣称一条 `make` 命令即可从空环境恢复。
 
-3. **商品和订单并非完全没有数据**
+3. **review/topics空白不是分类器训练失败（2026-10-17只读快照）**
+   - 业务库中9条低置信度问题都未归并；review读取 `review_queue`，topics读取 `topic_classifications`，两表目前均为0。启动分类器不会触发这两段写库批处理。
+   - 先归并才能批量分类；不足默认10条门槛时需显式强跑。历史训练集和当前真实业务问题必须分开，页面条目不能由评测数据灌入。
+
+4. **商品和订单并非完全没有数据**
    - `data/catalog/products.json` 已有24个演示商品。
    - `app/tools/business.py` 会为每个非空用户生成稳定订单，并保证1001、2002可用。
    - 实际缺口是没有“列出我的订单”工具、通用商品浏览工具，以及购买诉求被九类意图误归“其他”；不应为此建设完整商城数据库。
 
-4. **拒答后下一轮串答根因已定位**
+5. **拒答后下一轮串答根因已定位**
    - `script_reply`、`complaint_reply`、`fallback_reply` 只写 `state.answer`。
    - `log_node` 把答复写入MySQL，却没有把对应 `AIMessage` 写回LangGraph checkpointer的 `messages`。
    - 下一轮进入 `main_agent` 时，消息窗口中会出现连续的历史 `HumanMessage`；实时日志已经出现“上一轮购买问题+本轮订单问题一起回答”的同型现象。
@@ -79,7 +92,7 @@
 ## 设计决策
 
 - **评测扩充采用“旧集做开发、新集做盲测”**，而不是继续向已经调过参的300题中追加后宣称测试规模变大。
-- **分类器模型可再生、产物可下载**：数据和训练配置进版本控制；大模型文件不直接进普通Git，使用带SHA256的artifact manifest和下载/校验脚本。
+- **分类器模型可再生、产物后续可下载**：数据和训练配置进版本控制；大模型文件不直接进普通Git。本地SHA256清单和启动校验已完成，上传与下载脚本仍是后续目标。
 - **商城边界采用演示适配层**：补 `list_products`、`list_orders` 和商城跳转建议，不实现真实下单。
 - **会话修复在 `log_node` 统一补齐确定性AI消息**：数据库落库成功后，只有确定性答复路径返回带 `db-<message_id>` 的 `AIMessage`；Agent路径已有AI消息，不重复追加。
 - **目录扁平化不是零影响改名**：迁移时已重建`.venv`、显式固定并迁移Docker卷、保留Git历史和用户改动；后续开发不得重新引入 `EcomAgent/python/` 路径。
@@ -92,8 +105,8 @@
 | 四信号置信度与拒答治理 | Task 3、6 | Top1、有效证据数、分差、关键条款命中四信号及生成前门控保留 | 独立校准集选阈值、独立测试集报告误放/误拦；“人工幻觉率”必须有逐条人工台账 |
 | 九类意图到五个出口的Workflow + Agent | Task 1、2 | 九类和五出口不改名；知识、退款以及商品/订单事实获取都有不可跳过的确定性前置节点 | 图结构测试证明Agent无法绕过证据/订单/商品上下文；若仍存在直达Agent路径，发布说明必须限定适用范围 |
 | 三层上下文、异步摘要、工具裁剪 | Task 1、3、6 | 原文层、半压缩层、摘要层和异步摘要机制保留 | 固定多轮集对比基线；只有事实保留率相对提升达到50%时才保留“提升50%” |
-| 三入口数据飞轮 | Task 3、6 | 低置信、语义自检失败、用户负反馈三入口以及人工审核回写保留 | 端到端闭环集证明写回后可重新命中，并报告补库成功率和回归情况 |
-| 17类多标签RoBERTa + ONNX | Task 4、5、6 | 分类器仍是飞轮旁路，不与在线九类意图混用 | 独立测试集报告micro-F1；只有达到96.4%才保留原数字。“轻量”需延迟、内存或量化证据，否则写“ONNX独立部署” |
+| 三入口数据飞轮 | Task 3、5A、6 | 低置信、语义自检失败、用户负反馈三入口以及人工审核回写保留；Task 5A仅验证现有问题进入待审队列，不代替完整闭环 | 端到端闭环集证明写回后可重新命中，并报告补库成功率和回归情况 |
+| 17类多标签RoBERTa + ONNX | Task 4、5、5A、6 | 分类器仍是飞轮旁路，不与在线九类意图混用；单句推理可用不等于topics已有记录 | 独立测试集报告micro-F1；只有达到96.4%才保留原数字。“轻量”需延迟、内存或量化证据，否则写“ONNX独立部署” |
 | 架构决策可追溯性 | Task 0、8 | 用ADR、提交和验收报告记录 EcomAgent 的关键改造 | 对外说明只引用当前代码、提交记录和可复现验收结果，不使用无法追溯的主张 |
 
 > 验收原则：项目能力和指标只按当前可复现证据表述，不能反向制造证据。
@@ -101,27 +114,28 @@
 ## 依赖与并行关系
 
 ```text
-Task 7 目录扁平化（已于2026-10-14完成）
+Task 7 目录扁平化（完成）
  ↓
-Task 0 冻结基线
- ├─ Task 1 会话串答修复 ───────────────┐
- ├─ Task 2 商品/订单演示能力 ──────────┤  可并行组 A
- ├─ Task 3 新评测集设计与标注 ─────────┤
- └─ Task 4 分类器训练资产准备 ──────────┘
+Task 0 分类器范围基线 → Task 4 本地训练资产 → Task 5 训练/导出/隔离验收（均完成）
+                                                 ↓
+                            Task 5A 现有业务问题归并与主题分布验收（已完成，2026-10-17）
 
-当前优先：Task 0（分类器基线）→ Task 4 → Task 5（原有v1数据训练/导出/服务验收）
-Task 3新增数据独立后置，不是Task 5恢复服务的前置条件。
-Task 1 + Task 2 + Task 3 + Task 5 → Task 6 全链路评测
-Task 6 → Task 8 最终回归与文档
+Task 0 采集 Task 5A 之后的业务基线 → Task 1 会话串答修复、Task 2 商品/订单演示、
+Task 3 新评测集设计与数据合同：相互独立，可独立安排；Task 3 新增数据按本批次推进。
+Task 4 Step 4 + Task 5 Step 6 远程模型分发：无已授权远端存储时标为阻塞，
+并阻塞 Task 8 的空环境部署验收。
+Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与文档
 ```
 
 ---
 
 ### Task 0: 冻结当前基线与保护用户改动
 
+**Timing note:** 本 Task 0 记录的是 **Task 5A 执行之后**的当前基线（含 4 条 `review_queue`、9 条 `topic_classifications` 与归并结果）。执行前的空白基线只能引用下方“执行前（Task 5A 之前）只读核验快照”及 Task 5A Step 1 的重查/备份记录，不得用当前值倒填为历史。
+
 **Files:**
 - Create: `data/eval/manifests/baseline.json`
-- Preserve: `data/ch10/reports/golden_report.json`
+- Preserve: `data/ch10/reports/golden_report.json`、`data/ch10/reports/threshold_scan.json`
 
 **Interfaces:**
 - Consumes: 当前Git状态、模型配置、知识库块数、各评测集文件。
@@ -364,9 +378,9 @@ Task 6 → Task 8 最终回归与文档
   Run: `make ch10-export`
   Expected: Torch/ONNX逐样本预测一致，报告文件SHA256、体积和CPU延迟；峰值内存本次标记未测，后续补性能专项。
 
-- [x] **Step 5: 启动服务并验收旁路**
+- [x] **Step 5: 启动服务并在隔离测试库验收旁路**
   Run: `make classifier-up && curl -fsS http://127.0.0.1:8110/healthz`
-  使用隔离测试库和真实分类服务验证旁路写入与第二次运行幂等；不向业务问题池新增评测样本。
+  使用隔离测试库和真实分类服务验证旁路写入与第二次运行幂等；不向业务问题池新增评测样本。此步不运行真实业务库的 `make flywheel` / `make classify-pool`，不能据此宣称 review/topics 页面已有条目；该验收见 Task 5A。
 
 - [ ] **Step 6（后置）: 上传模型资产并回下载复验**
   从空的 `data/ch10/onnx/` 状态执行bootstrap，校验下载后服务可启动。
@@ -376,9 +390,50 @@ Task 6 → Task 8 最终回归与文档
 
 ---
 
+### Task 5A: 用现有业务问题联通飞轮评审与主题分布
+
+**Depends on:** Task 5 的本机服务与ONNX包；不依赖 Task 1、2、3 或新增评测数据。
+
+**Parallel:** 可与 Task 1、2、3 的代码或数据设计独立推进；同一业务库的飞轮跑批和分类跑批不可并发，顺序固定为“归并 → 分类”。
+
+**Writes:** 现有业务库 `review_queue`、`low_confidence_questions.matched_review_id`、`topic_classifications`，并覆盖本地 `data/ch10/reports/classify_run.json`。**Does not write:** `dataset/`、训练/评测集、知识库或用户保留的未提交报告；不自动批准/驳回审核条目。
+
+**Interfaces:** `make flywheel` 将未归并问题标准化、去重并送入待审队列；`make classify-pool` 只处理 `matched_review_id IS NOT NULL` 且尚未分类的问题，默认至少10条，少于10条时仅在确认后使用 `FORCE=1`。`/api/review/queue` 和 `/api/topics/distribution` 是两个只读验收入口。
+
+- [x] **Step 1: 重查并备份业务基线**
+  只读记录三个表的行数、当前快照中9条问题是否仍未归并、当前待分类数及来源分布；按Task 7已验证的MySQL备份流程对将更新的业务表建立备份，并检查备份文件可读且包含表结构和数据。若数据已变化，以重查结果为准调整后续批量规模，不按旧快照灌数据。
+  Result (2026-10-17): 重查与旧快照一致——`low_confidence_questions`=9(全部 `matched_review_id IS NULL`,来源全部 `retrieval_low_conf`)、待分类0、`review_queue`=0、`topic_classifications`=0。备份 `backups/task5a-20261017-005626/task5a-tables.sql`(sha256 `50d9019de4eafa24d9fbfc780f754cdac9667938d4981ee8cee3a170220c4d0d`),含3张表结构 + lcq 9行数据,可读。
+
+- [x] **Step 2: 检查前置服务和日志边界**
+  确认MySQL、聊天模型上游和 `:8110/healthz` 可用，ONNX bundle哈希与当前清单一致；确认没有另一份飞轮/分类作业运行。上游不可用时停止，不把跳过或HTTP失败当作空数据成功。
+  Result (2026-10-17): MySQL(3306)连通;`:8110/healthz` 返回 `bundle_sha256=13e05e9f0477888a0f2fc8bbbb548189759429d5bcd7c98265532005127a04a4`、`onnx_sha256=bcea2710…`、threshold=0.35,与本地 `artifacts.verify_bundle` 清单一致;聊天上游探测返回“在线”;`ps` 确认只有主应用在跑,无并发飞轮/分类作业。
+
+- [x] **Step 3: 先运行真实问题归并**
+  Run: `make flywheel`
+  Expected: 输出本轮 `processed/created/merged/skipped`；若 `processed=0` 且仍有未归并问题，检查标准化错误并停止，不强行分类。只允许现有问题生成待审项，不自动执行通过/驳回或写回知识库。
+  Result (2026-10-17): `本轮处理 9 条:新建缺口 4,归并 5,跳过待重试 0`,EXIT=0。
+
+- [x] **Step 4: 核对review页与归并关系**
+  只读核对 `review_queue` 增量、每条已处理问题的 `matched_review_id` 和 `/api/review/queue`；重复问法可归并到同一待审项，所以不要求待审项数等于处理问题数。保留未处理/跳过条目供下一轮重试。
+  Result (2026-10-17): `review_queue`=4(1“是否有汽水出售”/2“店铺目前销售哪些商品”/3“店铺是否销售玩具”/4“店铺是否销售猫粮”,全部 `待审`);9条问题 `matched_review_id` 分别为 1→1、2/3/7→2、4/5/6→3、8/9→4,`lcq_unmatched`=0;`/api/review/queue` 返回4条,按 occurrence_count 降序(3,3,2,1)。无自动通过/驳回。
+
+- [x] **Step 5: 按实际待分类数运行旁路批量归类**
+  若待分类数为0，停止并调查归并结果；达到10条时运行 `make classify-pool`，不足10条且确需完成本批验收时运行 `make classify-pool FORCE=1`。核对写入数与已归并、先前未分类的问题数一致；不得对未归并原话直接分类来填页。
+  Result (2026-10-17): `repository.list_unclassified_questions` 实测待分类9条(<10门槛),因本批确需完成验收运行 `make classify-pool FORCE=1`;`归类完成:9 条写入 topic_classifications;其他=8 库存补货=1`,EXIT=0;写入数与已归并未分类数一致,未对未归并原话分类。
+
+- [x] **Step 6: 核对topics页和幂等性**
+  `/api/topics/distribution.total` 应等于业务库中有对应问题行的分类记录数；每条结果只计入其命中的类目。第二次运行 `make flywheel` 和适用的分类命令，应无重复待审项或分类记录；若有跳过问题，明确未完成范围，不宣称全量幂等。
+  Result (2026-10-17): `/api/topics/distribution` `total=9`,与 `topic_classifications`=9 一致,命中分布 `库存补货=1、其他=8`。第二次 `make flywheel` 输出 `本轮处理 0 条…跳过 0`,第二次 `make classify-pool FORCE=1` 输出 `池里没有待归类问题`,`topic_classifications`/`review_queue`/`lcq_unmatched` 均无变化(9/4/0),本批全量幂等、无跳过条目。
+
+- [x] **Step 7: 保存真实验收结论并审核改动**
+  记录前后行数、命令退出码、跳过条数、接口响应、分类bundle身份和是否存在异常；`classify_run.json` 只在审阅内容且不含敏感数据后单独决定是否提交。不得将本批线上问题归类结果冒充独立评测集成绩。
+  Result (2026-10-17): 行数 前(9/0/0/0)→后(9 lcq,全部归并/4 review/9 topic);全部命令 EXIT=0、跳过0、无异常;分类bundle身份 `13e05e9f…`。本批为现有业务问题归类,不是独立评测集成绩;`classify_run.json` 现记录第二次幂等运行(`status=empty`),未提交。用户保留的 `golden_report.json`/`threshold_scan.json` 哈希未变(`e45edf0…`/`37b8dc7…`)。
+
+---
+
 ### Task 6: 运行全链路评测并建立发布门槛
 
-**Depends on:** Task 1、Task 2、Task 3、Task 5。
+**Depends on:** Task 1、Task 2、Task 3、Task 5A；Task 5 已完成本地模型验收。
 
 **Files:**
 - Create: `scripts/run_release_eval.py`
@@ -475,7 +530,7 @@ Task 6 → Task 8 最终回归与文档
 
 **Interfaces:**
 - 新用户从根目录依次执行 `uv sync`、配置`.env`、`docker compose up -d`、建库、`make dev`即可运行主业务。
-- 分类器通过 `make classifier-bootstrap && make classifier-up`可恢复，不依赖开发者本机遗留文件。
+- 分类器在完成 Task 4 Step 4 / Task 5 Step 6 的远程分发后，才能通过计划中的 `make classifier-bootstrap && make classifier-up` 从空环境恢复；当前尚无 `classifier-bootstrap` 命令，不能把本机已有ONNX包视为干净部署证明。
 
 - [ ] **Step 1: 从干净环境演练部署文档**
   不使用已有`.venv`、模型缓存或数据库状态完成一次部署验收。
@@ -492,7 +547,7 @@ Task 6 → Task 8 最终回归与文档
 
 ## 执行建议
 
-- 当前先执行分类器范围的Task 0 → Task 4 → Task 5；不等待新增评测数据。
-- 分类器恢复后执行Task 1，再推进Task 2与Task 3；Task 1修复完成前不运行多轮发布评测。
-- Task 7已先行完成；后续所有命令、文档和代码路径都以 `EcomAgent/` 为仓库根。
-- 当前用户已授权分类器实现、训练与服务验收；其他业务按后续批次实施。
+- 分类器范围的 Task 0 → Task 4 → Task 5 已完成本地训练与隔离验收；Task 5A 已完成真实业务问题的归并与主题分布联调（2026-10-17，见其结果记录）。
+- 本批次执行顺序：Task 0 新基线 → Task 1 → Task 2 → Task 3 → Task 4 Step 4 / Task 5 Step 6（远端分发，无授权目标则阻塞）→ Task 6 → Task 8。Task 1、2 共享图代码，避免并发改同一文件；Task 3 数据设计可独立推进。
+- Task 7 已先行完成；后续所有命令、文档和代码路径都以 `EcomAgent/` 为仓库根。
+- 远程模型分发需要已授权的存储目标；未确定前先完成其他独立任务，并把该项及依赖它的 Task 8 空环境验收标为阻塞，不宣称全计划完成。
