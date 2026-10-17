@@ -417,7 +417,11 @@ def resolve_answer(state) -> str:
 
 
 async def log_node(state) -> dict:
-    """日志记录:留痕 intent/route/trace(可观测地基),并落 MySQL 一条 assistant 消息(审计)。"""
+    """日志记录:留痕 intent/route/trace(可观测地基),并落 MySQL 一条 assistant 消息(审计)。
+
+    确定性答复(script/complaint/fallback)只写 state.answer,不进 messages;若不补一条
+    AIMessage,下一轮模型窗口里就是连续两条 HumanMessage,会被答成"上一轮+本轮"。
+    落库成功后把带 db-<id> 锚点的 AIMessage 写回 messages;Agent 路径已有 AI 消息,不重复。"""
     logger.info(
         "turn conv=%s intent=%s route=%s resolved=%r trace=%s",
         state.get("conversation_id"), state.get("intent"), state.get("route"),
@@ -425,6 +429,8 @@ async def log_node(state) -> dict:
     )
     answer = resolve_answer(state)
     if state.get("conversation_id"):
-        await repository.append_message(state["conversation_id"], "assistant",
-                                        content=answer or None)
+        msg_id = await repository.append_message(state["conversation_id"], "assistant",
+                                                 content=answer or None)
+        if state.get("answer"):
+            return {"messages": [AIMessage(answer, id=f"db-{msg_id}")]}
     return {}

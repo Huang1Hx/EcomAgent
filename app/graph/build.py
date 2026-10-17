@@ -5,7 +5,7 @@ from app.graph.routing import confidence_gate, route_by_intent, should_continue
 from app.graph.state import ConversationState
 
 
-def _builder() -> StateGraph:
+def _builder(nodes=nodes, route_by_intent=route_by_intent) -> StateGraph:
     b = StateGraph(ConversationState)
     # 节点
     b.add_node("resolve_reference", nodes.resolve_reference)
@@ -54,5 +54,6 @@ def _builder() -> StateGraph:
     return b
 
 
-def build_graph(checkpointer=None):
-    return _builder().compile(checkpointer=checkpointer)
+def build_graph(checkpointer=None, nodes=nodes, route_by_intent=route_by_intent):
+    """nodes/route_by_intent 可注入替身(测试/演练用);默认即 app 的生产实现。"""
+    return _builder(nodes, route_by_intent).compile(checkpointer=checkpointer)

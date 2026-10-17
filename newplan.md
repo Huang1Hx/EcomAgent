@@ -173,28 +173,30 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 - Consumes: `repository.append_message(...) -> int` 返回的MySQL消息ID。
 - Produces: `log_node(state) -> {"messages": [AIMessage]}`，仅在 `state.answer` 非空的确定性答复路径产生；消息ID为 `db-<mysql_message_id>`。
 
-- [ ] **Step 1: 写失败单测 `test_log_node_adds_deterministic_reply_to_graph_history`**
+- [x] **Step 1: 写失败单测 `test_log_node_adds_deterministic_reply_to_graph_history`**
   断言确定性 `answer` 落库后返回一条内容相同、ID为 `db-<id>` 的 `AIMessage`。
 
-- [ ] **Step 2: 写失败单测 `test_log_node_does_not_duplicate_agent_reply`**
+- [x] **Step 2: 写失败单测 `test_log_node_does_not_duplicate_agent_reply`**
   状态已有Agent `AIMessage` 且 `answer` 为空时，断言 `log_node` 不再返回新消息。
 
-- [ ] **Step 3: 写两轮回归测试 `test_fallback_then_business_turn_keeps_question_answer_pairs`**
+- [x] **Step 3: 写两轮回归测试 `test_fallback_then_business_turn_keeps_question_answer_pairs`**
   第一轮走 `fallback_reply`，第二轮走Agent；断言第二轮模型窗口中上一轮用户消息后紧跟拒答 `AIMessage`，且生成内容只响应第二轮问题。
 
-- [ ] **Step 4: 运行测试确认失败**
+- [x] **Step 4: 运行测试确认失败**
   Run: `uv run pytest -q tests/graph/test_log_node.py tests/graph/test_turn_message_pairing.py`
   Expected: 新增断言因缺少确定性 `AIMessage` 而失败。
+  Result: 修改前 `test_log_node_adds_deterministic_reply_to_graph_history` 与两轮回归均失败(拒答轮后 messages 只有 `['human']`);Agent 路径用例按设计通过。
 
-- [ ] **Step 5: 修改 `log_node` 做最小修复**
+- [x] **Step 5: 修改 `log_node` 做最小修复**
   保存数据库返回的消息ID；确定性答复返回带数据库锚点的 `AIMessage`，Agent路径维持现状。
 
-- [ ] **Step 6: 验证流式接口没有重复输出**
+- [x] **Step 6: 验证流式接口没有重复输出**
   Run: `uv run pytest -q tests/graph/test_runtime.py tests/graph/test_log_node.py tests/graph/test_turn_message_pairing.py tests/test_chat_api.py`
   Expected: PASS；确定性文案仍只通过原有delta发送一次。
+  Result (2026-10-17, Task 1): 新增 `tests/graph/test_stream_deterministic_once.py`;定向 24 项通过;真实两轮回放(重启 :8000 后)第 2 轮不再复述上一轮“天气”,回答只针对本轮订单;全量 `536 passed, 2 skipped`。修复: `log_node` 落库后对确定性答复返回 `AIMessage(answer, id=db-<id>)`,Agent 路径不重复;`build_graph/_builder` 增加可注入 nodes/route 参数(测试隔离用)。
 
-- [ ] **Step 7: 提交**
-  Commit: `fix: preserve deterministic replies in conversation state`
+- [x] **Step 7: 提交**
+  Commit: 提交 SHA 见本节 Result 与最终汇报(提交信息 `fix: preserve deterministic replies in conversation state`)。
 
 ---
 
