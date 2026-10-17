@@ -1,0 +1,24 @@
+{
+  "dataset": "data/eval/context_test.jsonl",
+  "task": "context",
+  "split": "test",
+  "source": "ai_assisted_multi_turn",
+  "generation_method": "ai_assisted_template",
+  "review_status": "ai_assisted_unreviewed",
+  "reviewers": 0,
+  "generated_at": "2026-10-17",
+  "samples": 50,
+  "support": {
+    "review_status": {
+      "ai_assisted_unreviewed": 50
+    }
+  },
+  "sha256": "8e26399212ec0a48e8aeffbfe64e3ce38a07ad1283f074506012e5242e1170ce",
+  "dedup": {
+    "text_field": null,
+    "duplicate_texts": [],
+    "exact_text_unique": true
+  },
+  "independent_release_evidence": false,
+  "note": "AI 辅助编写、未经真实人工审核;只能用于开发/回归,不得表述为人工审核或已验证的独立发布证据。人工审核后须更新 review_status/reviewers 并重算哈希。"
+}

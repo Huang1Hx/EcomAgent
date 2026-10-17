@@ -1,0 +1,40 @@
+{
+  "dataset": "data/eval/intent_test.jsonl",
+  "task": "intent",
+  "split": "test",
+  "source": "ai_assisted_template",
+  "generation_method": "ai_assisted_template",
+  "review_status": "ai_assisted_unreviewed",
+  "reviewers": 0,
+  "generated_at": "2026-10-17",
+  "samples": 315,
+  "support": {
+    "expect_intent": {
+      "人工": 24,
+      "其他": 20,
+      "售后": 24,
+      "商品咨询": 26,
+      "投诉": 35,
+      "物流": 24,
+      "订单": 25,
+      "退款退货": 24,
+      "闲聊": 20
+    },
+    "kind": {
+      "boundary": 93,
+      "drift": 30,
+      "single": 192
+    },
+    "review_status": {
+      "ai_assisted_unreviewed": 315
+    }
+  },
+  "sha256": "d92a2065bc8efa59feacf11396bca12e91bc04bc193ec90e27b7085373309b2c",
+  "dedup": {
+    "text_field": "query",
+    "duplicate_texts": [],
+    "exact_text_unique": true
+  },
+  "independent_release_evidence": false,
+  "note": "AI 辅助编写、未经真实人工审核;只能用于开发/回归,不得表述为人工审核或已验证的独立发布证据。人工审核后须更新 review_status/reviewers 并重算哈希。"
+}

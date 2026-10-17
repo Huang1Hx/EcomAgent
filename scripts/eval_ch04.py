@@ -22,6 +22,7 @@ rag_eval.json 给后台的 RAG 评估页读。页面只读这份 json、不重�
 """
 import asyncio
 import json
+import os
 import pathlib
 import sys
 from datetime import datetime
@@ -91,8 +92,56 @@ def _log(msg=""):
     _LINES.append(msg)
 
 
-def _load():
-    return [json.loads(ln) for ln in open("tests/data/eval_ch04.jsonl")]
+# Task 3: 旧 300 题只是开发集;新盲测集走 data/eval/rag_blind_test.jsonl。
+# 用环境变量 RAG_EVAL_SET 切换(相对仓库根),报告里如实记录用的是哪一份。
+LEGACY_DEV_SET = "tests/data/eval_ch04.jsonl"
+DEFAULT_EVAL_SET = "data/eval/rag_blind_test.jsonl"
+_CONF_THRESHOLD = settings.evidence_confidence_threshold
+
+
+def eval_set_path() -> str:
+    import os
+    return os.environ.get("RAG_EVAL_SET", DEFAULT_EVAL_SET)
+
+
+def dataset_role(path: str) -> str:
+    """报告口径:旧 300 题只能当开发集,新盲测集才标测试集。"""
+    return "development_only" if path == LEGACY_DEV_SET else "blind_test"
+
+
+def env_threshold() -> float:
+    """固定阈值:默认取配置里的上线值;发布评测可用 RAG_CONF_THRESHOLD 冻结一份。"""
+    return float(os.environ.get("RAG_CONF_THRESHOLD", settings.evidence_confidence_threshold))
+
+
+def refusal_metrics(samples, hits_by_id: dict, threshold: float | None = None) -> dict:
+    """盲测集固定阈值下的误放/误拦(逐题证据置信度,不重调阈值)。"""
+    from app.core.confidence import compute_evidence_confidence
+    t = _CONF_THRESHOLD if threshold is None else threshold
+    tp = fp = tn = fn = 0
+    for s in samples:
+        hits = hits_by_id.get(s["id"], [])
+        passed = compute_evidence_confidence(hits).score >= t
+        if s["should_refuse"]:
+            fp += passed
+            fn += not passed
+        else:
+            tp += passed
+            tn += not passed
+    return {"threshold": t,
+            "answerable": {"correct": tp, "wrongly_refused": tn, "total": tp + tn},
+            "absent": {"correct": fn, "wrongly_passed": fp, "total": fn + fp},
+            "false_pass_rate": round(fp / (fn + fp), 4) if fp + fn else None,
+            "false_refuse_rate": round(tn / (tp + tn), 4) if tp + tn else None}
+
+
+def _load(path: str | None = None):
+    path = path or eval_set_path()
+    if not pathlib.Path(path).exists():
+        raise SystemExit(f"评估集不存在:{path}(旧开发集用 RAG_EVAL_SET={LEGACY_DEV_SET})")
+    with open(path, encoding="utf-8") as fh:
+        # 旧开发集没有 expect_sections_all;评测器只读标准小节/要点,不改答案
+        return [json.loads(ln) for ln in fh if ln.strip()]
 
 
 # ---------- 通用 ----------
@@ -111,7 +160,10 @@ def _groups(sample) -> list[list[str]]:
     groups = sample.get("expect_sections_all")
     if groups:
         return [g if isinstance(g, list) else [g] for g in groups]
-    return [sample["expect_section"]]
+    single = sample.get("expect_section")
+    if isinstance(single, list):
+        return [single]
+    return [[single]] if single else []
 
 
 def _ranks_per_group(hits, sample) -> list[int]:
@@ -335,6 +387,9 @@ async def _refusal_one(s):
 
 
 async def _generation(samples, HITS):
+    # 探索/校准集必须 explicit 打开;默认只对盲测集出生成段分数
+    if dataset_role(eval_set_path()) != "blind_test" and os.environ.get("RAG_ALLOW_DEV_GEN") != "1":
+        raise RuntimeError("非盲测集:生成段默认关闭,开发集加 RAG_ALLOW_DEV_GEN=1 才跑")
     graded = [s for s in samples if s["bucket"] in GRADED_BUCKETS]
     absent = [s for s in samples if s["bucket"] == "D_absent"]
     model = get_chat_model()
@@ -470,11 +525,12 @@ async def _read_notes(retrieval_data, coverage_data, generation_data):
     return notes
 
 
-def _write_report(retrieval_data, coverage_data, generation_data, meta, notes=None):
+def _write_report(retrieval_data, coverage_data, generation_data, meta, notes=None, refusal=None):
     _OUT_DIR.mkdir(parents=True, exist_ok=True)
     _OUT_TXT.write_text("\n".join(_LINES) + "\n", encoding="utf-8")
     report = {"meta": meta, "retrieval": retrieval_data,
-              "evidence_coverage": coverage_data, "generation": generation_data,
+              "evidence_coverage": coverage_data, "refusal": refusal or {},
+              "generation": generation_data,
               "read_notes": notes or {}}
     # generation 为 None 也照样落盘:页面据此显示「生成段未完成」,而不是一片空白
     _OUT_JSON.write_text(json.dumps(report, ensure_ascii=False, indent=1) + "\n",
@@ -483,12 +539,19 @@ def _write_report(retrieval_data, coverage_data, generation_data, meta, notes=No
 
 async def main():
     samples = _load()
+    global _CONF_THRESHOLD
+    _CONF_THRESHOLD = env_threshold()
     import collections as _c
     per = _c.Counter(s["bucket"] for s in samples)
-    _log(f"评估集:{len(samples)} 题(" + "、".join(
+    eval_path = eval_set_path()
+    role = dataset_role(eval_path)
+    _log(f"评估集:{eval_path}({role})· {len(samples)} 题(" + "、".join(
         f"{BUCKET_LABEL.get(b, b)} {n}" for b, n in per.most_common()) + f"),策略 {STRATEGIES}")
+    if role == "development_only":
+        _log("口径:旧 300 题已参与调优,本报告只作开发回归,不得表述为独立测试结果。")
     _log(f"检索并发 {RETR_CONCURRENCY} · 生成并发 {GEN_CONCURRENCY} · 单调用超时 {CALL_TIMEOUT:.0f}s\n")
     retrieval_data, coverage_data, HITS = await _deterministic(samples)
+    refusal = refusal_metrics(samples, HITS["hybrid_rerank"])
     generation_data = None
     if SKIP_GEN:
         _log("\n[生成段跳过] --skip-gen:本轮只跑确定性两段,页面按「生成段未完成」显示。")
@@ -500,15 +563,21 @@ async def main():
             _log("检索段与证据覆盖度已完成;页面将标注生成段未完成,上游恢复后重跑补全。")
     if _errs:
         _log(f"\n注:生成段有 {len(_errs)} 次 glm 调用超时/失败被跳过(上游不稳),已按可用样本计。")
-    meta = {"n_samples": len(samples), "kb_chunks": await _kb_chunks(),
+    meta = {"dataset": eval_path, "dataset_role": role,
+            "review_status": sorted({s.get("review_status", "unknown") for s in samples}),
+            "n_samples": len(samples), "kb_chunks": await _kb_chunks(),
             "recall_k": RECALL_K, "retrieve_k": K,
             "concurrency": GEN_CONCURRENCY, "chat_model": settings.chat_model,
+            "confidence_threshold": _CONF_THRESHOLD,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
     # 读图小注也要过裁判模型,--skip-gen 时一并跳过,页面回落自己那句兜底话
     notes = {} if SKIP_GEN else await _read_notes(retrieval_data, coverage_data,
                                                   generation_data)
-    _write_report(retrieval_data, coverage_data, generation_data, meta, notes)
+    _write_report(retrieval_data, coverage_data, generation_data, meta, notes, refusal)
     _log(f"\n已生成:{_OUT_JSON.relative_to(_ROOT)} · {_OUT_TXT.relative_to(_ROOT)}")
+    _log(f"固定阈值拒答(hybrid_rerank,t={refusal['threshold']}):可答误拦 "
+         f"{refusal['answerable']['wrongly_refused']}/{refusal['answerable']['total']}、"
+         f"库外误放 {refusal['absent']['wrongly_passed']}/{refusal['absent']['total']}")
     _log("页面:http://localhost:8000/rag-eval(后台 → RAG 评估)")
     _log("完成。" if generation_data is not None else "完成(仅检索段+证据覆盖度;生成段待上游恢复重跑)。")
 

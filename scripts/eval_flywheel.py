@@ -1,158 +1,159 @@
-"""ch09 自动化评估流水线:复用 ch04 评估集与指标,定期跑、落 eval_runs、连趋势。
-指标:检索段 Recall@5 / MRR(hybrid_rerank,可答桶,跨文档题按组凑齐算),生成段 Faithfulness + D 桶拒答率。
-运行:make eval-flywheel(TRIGGER=手动|定时,默认手动)。cron 示例:
-  0 6 * * * cd /path/to/mewhelp && make eval-flywheel TRIGGER=定时 >> log/eval.log 2>&1
-趋势:读最近 10 轮,对比上一轮涨跌;任何指标下滑标 ⚠——README:「重点全在这条趋势线上」。
-产物:data/ch09/reports/eval_trend.txt(趋势本身的权威源是 eval_runs 表,
-「观测与成本」页直接读表,不读这份文本,免得同一条趋势有两个出处)。
-另落 eval_trend_note.json:模型看着这一轮的涨跌写的读图小注,带上它描述的轮次 id,
-页面只在这个 id 还是最新一轮时才用它。
+"""飞轮闭环评测:拒答 → 入池 → 归并 → 人工批准(预置答案) → 写回 → 再问可答。
+
+安全边界:
+- 只允许隔离环境。必须同时设置 FLYWHEEL_EVAL_DATABASE_URL(独立 MySQL 库)与
+  FLYWHEEL_EVAL_MILVUS_URI(独立 Milvus 实例/地址),且不得与线上配置相同,否则直接拒绝。
+- 不写真实业务库,不自动审核生产待审条目;批准只发生在隔离库里由评测自己写入的条目上,
+  答案由数据集预置(expect_answer),评测不现编答案。
+- 数据集 data/eval/flywheel_closure_test.jsonl 为 AI 辅助未审核,结论只作开发/回归证据。
+
+用法:
+  FLYWHEEL_EVAL_DATABASE_URL=mysql+asyncmy://root:root@localhost:3306/mewhelp_flywheel_eval \\
+  FLYWHEEL_EVAL_MILVUS_URI=http://localhost:19531 \\
+  PYTHONPATH=. uv run python scripts/eval_flywheel.py [--limit N]
+报告:data/ch09/reports/flywheel_closure_eval.json
 """
 import argparse
 import asyncio
+import datetime as dt
+import hashlib
 import json
-import pathlib
-import sys
+import os
+import uuid
+from pathlib import Path
 
-from pydantic import BaseModel, Field
+import httpx
 
-from app.core import llm, read_notes
-from app.core.llm import get_chat_model
-from app.core.prompts import FAITHFULNESS_PROMPT, RAG_ANSWER_PROMPT
-from app.db import repository
-from scripts.eval_ch04 import (
-    GRADED_BUCKETS,
-    RECALL_K,
-    _format_evidence,
-    _load,
-    _mean,
-    _ranks_per_group,
-    _recall_at,
-    _refusal_one,
-    _retrieve,
-    _rr,
-    _try,
-)
+from app.config import settings
 
-_ROOT = pathlib.Path(__file__).resolve().parent.parent
-_OUT = _ROOT / "data/ch09/reports/eval_trend.txt"
-_NOTE = _ROOT / "data/ch09/reports/eval_trend_note.json"
-_METRICS = ("recall_at_5", "mrr", "faithfulness", "refusal_rate")
-_LINES: list[str] = []
+ROOT = Path(__file__).resolve().parent.parent
+DATASET = ROOT / "data/eval/flywheel_closure_test.jsonl"
+REPORT = ROOT / "data/ch09/reports/flywheel_closure_eval.json"
+COLLECTION = "flywheel_eval"
+ANSWER = "评测环境预置标准答复:飞轮写回后应能再次检索到该知识。"
 
 
-def _log(msg=""):
-    print(msg, flush=True)
-    _LINES.append(msg)
+def load_cases(path: Path = DATASET) -> list[dict]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()]
 
 
-class _Faith(BaseModel):
-    faithful: bool = Field(description="是否忠实于证据")
-    reason: str = Field(default="")
+def iso_env() -> tuple[str, str]:
+    db = os.environ.get("FLYWHEEL_EVAL_DATABASE_URL", "")
+    milvus = os.environ.get("FLYWHEEL_EVAL_MILVUS_URI", "")
+    if not db or not milvus:
+        raise SystemExit("拒绝运行:缺少隔离环境 FLYWHEEL_EVAL_DATABASE_URL / "
+                         "FLYWHEEL_EVAL_MILVUS_URI;飞轮闭环评测不得写真实业务库。")
+    if db == settings.database_url or milvus == settings.milvus_uri:
+        raise SystemExit("拒绝运行:评测库/向量库与线上配置相同,必须是独立环境。")
+    return db, milvus
 
 
-async def _gen_faith(s, hits, model, judge):
-    evidence = _format_evidence(hits)
-    ans = await _try(lambda: (RAG_ANSWER_PROMPT | model).ainvoke(
-        {"query": s["query"], "evidence": evidence}), f"gen:{s['id']}")
-    if ans is None:
-        return None
-    text = ans.content if isinstance(ans.content, str) else str(ans.content)
-    fa = await _try(lambda: (FAITHFULNESS_PROMPT | judge).ainvoke(
-        {"evidence": evidence, "answer": text}), f"faith:{s['id']}")
-    return None if fa is None else bool(fa.faithful)
+async def ask(client: httpx.AsyncClient, user_id: str, question: str, cid=None) -> dict:
+    r = await client.post(f"{BASE}/api/agent",
+                          json={"user_id": user_id, "message": question,
+                                "conversation_id": cid})
+    r.raise_for_status()
+    body = r.json()
+    answer = body.get("answer") or ""
+    actions = {a.get("type") for a in body.get("suggested_actions", [])}
+    return {"answer": answer, "refused": (not answer.strip()) or "transfer_human" in actions,
+            "conversation_id": body.get("conversation_id")}
 
 
-async def run_once() -> dict:
-    samples = _load()
-    graded = [s for s in samples if s["bucket"] in GRADED_BUCKETS]
-    absent = [s for s in samples if s["bucket"] == "D_absent"]
+async def _seed_and_writeback(db_url: str, milvus_uri: str, rows: list[dict]) -> dict:
+    """隔离库:写入池 → 归并 → 预置答案批准 → knowledge_chunks/Milvus 写回 → 标记完成。"""
+    from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-    hits_list = await asyncio.gather(*(_retrieve("hybrid_rerank", s) for s in graded))
-    # 口径跟 ch04 完全一致:跨文档题按组算,凑齐才算召回到(直接复用那边的函数)
-    ranks = [_ranks_per_group(h, s) for s, h in zip(graded, hits_list)]
-    recall = _mean([_recall_at(r, RECALL_K) for r in ranks])
-    mrr = _mean([_rr(r) for r in ranks])
+    from app.db import base, repository
+    from app.kb import dualwrite, milvus_client
+    from app.kb.documents import Chunk, is_key
 
-    model = get_chat_model()
-    judge = llm.structured(_Faith)
-    faiths = await asyncio.gather(*(
-        _gen_faith(s, h, model, judge) for s, h in zip(graded, hits_list)))
-    faithfulness = _mean([1.0 if f else 0.0 for f in faiths if f is not None])
-
-    refusals = await asyncio.gather(*(_refusal_one(s) for s in absent))
-    got = [r["refused"] for r in refusals if isinstance(r, dict) and "refused" in r]
-    refusal_rate = sum(got) / len(got) if got else 0.0
-
-    return {"dataset_size": len(samples),
-            "metrics": {"recall_at_5": round(recall, 3), "mrr": round(mrr, 3),
-                        "faithfulness": round(faithfulness, 3),
-                        "refusal_rate": round(refusal_rate, 3)}}
-
-
-async def _trend_note(runs) -> None:
-    """趋势的读图小注另存一份,并写上它描述的那一轮 id。
-
-    表才是趋势的权威源,注只能是旁挂的一份;不把 id 记下来,下一轮跑完但注没生成
-    (上游不稳)时,页面就会拿上一轮的话去解释这一轮的数。
-    """
-    latest = runs[0]
-    prev = runs[1] if len(runs) > 1 else None
-    lm, pm = latest.metrics or {}, (prev.metrics or {}) if prev else {}
-    zh = {"recall_at_5": "Recall@5", "recall_at_10": "Recall@10", "mrr": "MRR",
-          "faithfulness": "忠实度", "refusal_rate": "库外拒答率"}
-    payload = {
-        "本轮": {"轮次": latest.id, "触发": latest.triggered_by,
-                 **{zh[n]: lm.get(n) for n in _METRICS}},
-        "上一轮": {"轮次": prev.id, **{zh[n]: pm.get(n) for n in _METRICS}} if prev else None,
-        "涨跌": {zh[n]: round(lm.get(n, 0) - pm.get(n, 0), 3) for n in _METRICS} if prev else None,
-    }
-    note = await read_notes.generate("eval_trend", payload)
-    _log("\n读图小注:" + (note if note else "本轮没有(页面用兜底句)"))
-    _NOTE.write_text(json.dumps({"run_id": latest.id, "note": note},
-                                ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-
-
-def _trend(runs) -> None:
-    """runs 按新→旧;打印每轮各指标,并与上一轮(更旧一行)对比涨跌,下滑标 ⚠。"""
-    _log("\n=== 评估趋势(新在上)===")
-    names = list(_METRICS)
-    _log(f"{'轮次':>4s} {'时间':14s} {'触发':4s}" + "".join(f"{n:>18s}" for n in names))
-    for i, r in enumerate(runs):
-        prev = runs[i + 1].metrics if i + 1 < len(runs) else None
-        row = f"#{r.id:>3d} {r.created_at:%m-%d %H:%M}  {r.triggered_by:4s}"
-        for n in names:
-            v = r.metrics.get(n)
-            cell = f"{v:.3f}" if v is not None else "—"
-            if prev and v is not None and prev.get(n) is not None:
-                d = v - prev[n]
-                cell += " ↑" if d > 0.005 else (" ⚠↓" if d < -0.005 else " →")
-            row += f"{cell:>18s}"
-        _log(row)
-    if len(runs) > 1:
-        latest, older = runs[0].metrics, runs[1].metrics
-        drops = [n for n in names if latest.get(n, 0) < older.get(n, 0) - 0.005]
-        _log(f"\n⚠ 下滑指标:{', '.join(drops)}" if drops else "\n所有指标持平或上涨。")
+    # 隔离库:所有 repository 调用都走 app.db.base 的会话工厂
+    base.engine = create_async_engine(db_url)
+    base.async_session = async_sessionmaker(base.engine, expire_on_commit=False)
+    client = milvus_client.get_client(uri=milvus_uri)
+    milvus_client.ensure_collection(client, collection=COLLECTION)
+    stats = {"in_pool": 0, "review_items": 0, "approved": 0, "chunks_written": 0,
+             "vectorized": 0}
+    raw_rows = await repository.fetch_unmatched_low_conf(limit=len(rows) + 5)
+    by_text = {r.raw_question: r for r in raw_rows}
+    groups: dict[str, int] = {}
+    review_ids: list[int] = []
+    # 归并:同一知识缺口写入一个待审条目,后续同缺口只累加 occurrence
+    for row in rows:
+        key = row.get("gap", row["id"])
+        rid = groups.get(key)
+        if rid is None:
+            rid = await repository.insert_review_item(row["raw_question"], None)
+            groups[key] = rid
+            review_ids.append(rid)
+            stats["review_items"] += 1
+        else:
+            await repository.increment_occurrence(rid)
+        await repository.set_matched_review(by_text[row["raw_question"]].id, rid)
+    # 批准:只对本评测在隔离库创建的待审条目,使用数据集预置答案
+    for row in rows:
+        answer = row.get("expect_answer") or ANSWER
+        chunk = Chunk(category="飞轮沉淀", questions=row["raw_question"], answer=answer,
+                      section_path=f"飞轮沉淀 / {row['raw_question']}", content_type="faq",
+                      is_key_clause=is_key(row["raw_question"], answer))
+        ids = await dualwrite.write_pending([chunk])
+        stats["chunks_written"] += len(ids)
+    stats["vectorized"] = await dualwrite.vectorize_pending(client=client, collection=COLLECTION)
+    default_answer = (rows[0].get("expect_answer") if rows else None) or ANSWER
+    for rid in review_ids:
+        await repository.update_review_status(rid, "通过", approved_answer=default_answer)
+    stats["approved"] = sum(1 for rid in review_ids
+                            if (await repository.get_review_detail(rid))[0].review_status == "通过")
+    await base.engine.dispose()
+    return stats
 
 
-async def main():
+async def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--triggered-by", default="手动", choices=["手动", "定时"])
+    ap.add_argument("--limit", type=int, default=0, help="仅调试用,发布评测不得设置")
     args = ap.parse_args()
-
-    _log(f"=== ch09 评估流水线(触发:{args.triggered_by})===")
-    result = await run_once()
-    m = result["metrics"]
-    _log(f"本轮:Recall@5={m['recall_at_5']:.3f} MRR={m['mrr']:.3f} "
-         f"Faithfulness={m['faithfulness']:.3f} 拒答率={m['refusal_rate']:.3f}")
-    await repository.insert_eval_run(args.triggered_by, result["dataset_size"], m)
-    runs = await repository.list_eval_runs(limit=10)
-    _trend(runs)
-    _OUT.parent.mkdir(parents=True, exist_ok=True)
-    await _trend_note(runs)
-    _OUT.write_text("\n".join(_LINES) + "\n", encoding="utf-8")
-    _log(f"\n趋势报告已落 {_OUT.relative_to(_ROOT)}")
+    db_url, milvus_uri = iso_env()
+    global BASE
+    BASE = os.environ.get("EVAL_BASE_URL", "http://127.0.0.1:8000")
+    cases = load_cases()
+    if args.limit:
+        cases = cases[:args.limit]
+    results = []
+    async with httpx.AsyncClient(timeout=120) as client:
+        for row in cases:
+            first = await ask(client, f"fw-{row['id']}", row["raw_question"])
+            results.append({"id": row["id"], "raw_question": row["raw_question"],
+                            "first_refusal": first["refused"]})
+    stats = await _seed_and_writeback(db_url, milvus_uri, cases)
+    async with httpx.AsyncClient(timeout=120) as client:
+        for row, res in zip(cases, results):
+            second = await ask(client, f"fw-{row['id']}", row["raw_question"])
+            res["answerable_after"] = not second["refused"]
+            res["passed"] = res["first_refusal"] and res["answerable_after"]
+    passed = sum(r["passed"] for r in results)
+    payload = {
+        "meta": {"generated_at": dt.datetime.now().isoformat(timespec="seconds"),
+                 "dataset": str(DATASET.relative_to(ROOT)),
+                 "dataset_sha256": hashlib.sha256(DATASET.read_bytes()).hexdigest(),
+                 "review_status": sorted({c.get("review_status") for c in cases}),
+                 "independent_release_evidence": False,
+                 "isolation": {"database_env": "FLYWHEEL_EVAL_DATABASE_URL",
+                               "milvus_collection": COLLECTION},
+                 "source": "isolated_eval",
+                 "answer_source": "dataset_preset; not generated by review"},
+        "summary": {"passed": passed, "total": len(results),
+                    "first_refusal": sum(r["first_refusal"] for r in results),
+                    "answerable_after": sum(r["answerable_after"] for r in results), **stats},
+        "cases": results,
+    }
+    REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REPORT.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(f"飞轮闭环 {passed}/{len(results)};首次拒答 {payload['summary']['first_refusal']},"
+          f"写回后能答 {payload['summary']['answerable_after']};报告 {REPORT.relative_to(ROOT)}")
+    return 0 if passed == len(results) else 1
 
 
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()) or 0)
+    raise SystemExit(asyncio.run(main()))

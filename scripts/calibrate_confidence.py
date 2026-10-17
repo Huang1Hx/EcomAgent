@@ -48,7 +48,10 @@ def _dist(name, xs) -> dict | None:
 
 
 async def main():
-    samples = [json.loads(ln) for ln in open("tests/data/eval_ch04.jsonl")]
+    # Task 3: 校准只用 confidence_calibration.jsonl;盲测集(confidence_blind_test.jsonl)
+    # 由 scan_threshold_replay 在固定阈值下评估,不允许在这里被再次调阈值。
+    cal_path = _ROOT / "data/eval/confidence_calibration.jsonl"
+    samples = [json.loads(ln) for ln in open(cal_path, encoding="utf-8") if ln.strip()]
     results = await asyncio.gather(*(_conf(s) for s in samples))
     answerable = [c for b, c in results if b in ANSWERABLE]
     absent = [c for b, c in results if b == "D_absent"]
@@ -96,7 +99,7 @@ async def main():
     _OUT.write_text("\n".join(_LINES) + "\n", encoding="utf-8")
     _OUT_JSON.write_text(json.dumps({
         "meta": {"generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                 "strategy": "hybrid_rerank", "dataset": "tests/data/eval_ch04.jsonl",
+                 "strategy": "hybrid_rerank", "dataset": str(cal_path.relative_to(_ROOT)),
                  "n_answerable": len(answerable), "n_absent": len(absent)},
         "distribution": dist,
         "scan": scan,
