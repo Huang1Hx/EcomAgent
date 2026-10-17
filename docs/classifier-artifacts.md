@@ -51,4 +51,26 @@ RUN_CLASSIFIER_LIVE=1 uv run --group ml pytest -q tests/test_classifier_live.py
 ```
 
 日常 `make classify-pool FORCE=1` 会处理业务库中**已归并且未分类**的问题，应在需要实际归类时运行。
-新评测数据、独立盲测、量化和远程资产分发为后续工作。
+
+## 远程分发（Task 4 Step 4 / Task 5 Step 6）
+
+普通 Git 只提交代码、manifest 和报告；`data/ch10/model/`、`data/ch10/onnx/`（约 391 MB/份）
+继续被忽略。`data/ch10/artifact-manifest.json` 的 `artifact_uri` 目前仍为 `null`。
+**本仓库尚未配置已授权的对象存储/发布地址**，因此：
+
+- `make classifier-bootstrap` 会读取发布清单；`artifact_uri` 为空时以非零状态明确拒绝，
+  不会从公开 GitHub Release 或猜测地址下载，也不会把大文件放进普通 Git。
+- 获取存储授权后，把 ONNX 目录打成 zip，确保根目录扁平包含
+  `model.onnx`、`tokenizer.json`、`threshold.json`（可选 `tokenizer_config.json`），
+  在清单中填写 `artifact_uri`（https 或 file）与 `archive_sha256`，随后运行：
+
+```bash
+make classifier-bootstrap
+make classifier-up
+```
+
+下载器先落临时文件，校验归档 SHA256 与逐文件 SHA256 后原子替换
+`data/ch10/onnx/`；目标目录已有完整且一致的本地产物时直接跳过，
+已有不完整/不同版本产物时拒绝覆盖。下载失败不会留下半包，原目录保持不变。
+空 `data/ch10/onnx/` 加远程下载的可执行验收再用独立临时目录测试；真实空环境启动
+在本机完成前属于**阻塞项**，原因是没有已授权存储目标，而不是代码缺失。

@@ -2,7 +2,7 @@
 # (知识库、评估集)会抛 UnicodeDecodeError。必须在 Python 启动前生效,所以设在这里而不是 .env。
 export PYTHONUTF8 = 1
 
-.PHONY: help kb-repatch dev test eval eval-check judge-check seed eval-ch07 eval-agent eval-intent eval-suites eval-flywheel-closure kb-preview kb-build kb-vectorize kb-mine eval-retrieval seed-conv eval-mining kb-reset milvus-up milvus-down smoke-rag eval-rag smoke-interrupt eval-ch06 mcp-up mcp-down langfuse-up langfuse-down
+.PHONY: help classifier-bootstrap kb-repatch dev test eval eval-check judge-check seed eval-ch07 eval-agent eval-intent eval-suites eval-flywheel-closure kb-preview kb-build kb-vectorize kb-mine eval-retrieval seed-conv eval-mining kb-reset milvus-up milvus-down smoke-rag eval-rag smoke-interrupt eval-ch06 mcp-up mcp-down langfuse-up langfuse-down
 
 # 目标一多就记不住谁要什么前置条件,带 ## 注释的挑出来列一遍
 help:  ## 列出带说明的目标
@@ -58,6 +58,9 @@ ch10-export:  ## ch10 导出 ONNX 并校验与 torch 预测完全一致
 
 ch10-threshold-scan:  ## ch10 阈值扫描重演:九候选线各算一遍 micro-F1(需 :8110)
 	uv run --group ml python -m scripts.ch10.scan_threshold_replay --data-dir $(or $(DATA_DIR),dataset)
+
+classifier-bootstrap:  ## ch10 从发布清单下载并校验 ONNX 包(artifact_uri 未配置时明确失败)
+	PYTHONPATH=. uv run python -m scripts.ch10.fetch_model
 
 classifier-up:  ## ch10 推理服务 :8110(ONNX 轻运行时)
 	uv run --group ml python -m scripts.ch10.service start
