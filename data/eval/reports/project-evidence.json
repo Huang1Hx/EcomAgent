@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-19T01:10:04",
-  "git_sha": "028d4a79d28008c20bc4c76fd20603b1e448ce03",
+  "generated_at": "2026-10-19T05:08:10",
+  "git_sha": "b356b7b202b42ffce58b9759559f94dcf10f7e76",
   "items": [
     {
       "capability": "BGE-M3 + BM25 + RRF + BGE-Reranker",
@@ -17,7 +17,7 @@
     {
       "capability": "九类意图到五出口 Workflow + Agent",
       "status": "unsupported",
-      "report": ";/Users/huanghx/project/EcomAgent/data/ch02/reports/agent_eval.json",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch06/reports/intent_eval.json;/Users/huanghx/project/EcomAgent/data/ch02/reports/agent_eval.json",
       "statement": "九类意图、工具与订单归属校验"
     },
     {
@@ -28,8 +28,8 @@
     },
     {
       "capability": "三入口数据飞轮",
-      "status": "unsupported",
-      "report": "",
+      "status": "partially_supported",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch09/reports/flywheel_closure_eval.json",
       "statement": "隔离环境闭环:拒答→入池→归并→批准→写回→再答"
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "capability": "架构决策可追溯性",
-      "status": "partially_supported",
+      "status": "supported",
       "report": "data/eval/reports/release-eval.json",
       "statement": "按提交、报告和数据集合同追溯;仅当前证据"
     }

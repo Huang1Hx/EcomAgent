@@ -1,15 +1,23 @@
 {
-  "captured_at": "2026-10-17T20:58:57",
-  "git_sha": "7fc8ae9610379b6c443ceb42219d2162957cb9b9",
+  "captured_at": "2026-10-19T04:00:02",
+  "git_sha": "a350918533f0095e3ae34f227fc56c38cd1f6656",
   "dirty_paths": [
-    "M data/ch10/reports/golden_report.json",
+    "M data/ch02/reports/agent_eval.json",
+    " M data/ch10/reports/golden_report.json",
     " M data/ch10/reports/threshold_scan.json",
-    "?? scripts/eval/"
+    " M data/eval/reports/project-evidence.json",
+    " M data/eval/reports/project-evidence.md",
+    " M data/eval/reports/release-eval.json",
+    " M data/eval/reports/release-eval.md",
+    " M newplan.md",
+    " M scripts/eval_agent.py",
+    " M tests/test_eval_suite_runners.py",
+    "?? data/ch06/"
   ],
   "models": {
-    "chat_model": "deepseek-ai/DeepSeek-V4-Flash",
-    "chat_base_url": "https://api.siliconflow.cn/v1",
-    "intent_model": "deepseek-ai/DeepSeek-V4-Flash",
+    "chat_model": "deepseek-flash",
+    "chat_base_url": "https://api.llm.ustc.edu.cn/v1",
+    "intent_model": "deepseek-flash",
     "embed_model": "BAAI/bge-m3",
     "rerank_model": "BAAI/bge-reranker-v2-m3",
     "keys_present": {
@@ -35,6 +43,38 @@
     "tests/data/query_rewrite_samples.jsonl": {
       "samples": 5,
       "sha256": "8efd87170dee339c69591869a670696a99a8659a203f8e0103b8757dc115ee4c"
+    },
+    "data/eval/agent_test.jsonl": {
+      "samples": 153,
+      "sha256": "2ca78f167a0bc58bb52dd779ab8cdba4943ddae636953c219fe98037cf04f510"
+    },
+    "data/eval/confidence_blind_test.jsonl": {
+      "samples": 280,
+      "sha256": "bd162a59a3b08a9578442c7317efae7796696b8d091773f438b4fec36b989bac"
+    },
+    "data/eval/confidence_calibration.jsonl": {
+      "samples": 287,
+      "sha256": "6beb6ca60fd43b2c1f030ff68713abe498d18c4732ee538e6b1ee94826eaa0f0"
+    },
+    "data/eval/context_test.jsonl": {
+      "samples": 50,
+      "sha256": "75439dd094f6520c13ddc6ccd0d922fea685470d3e839a0d661ffb3483171e8e"
+    },
+    "data/eval/flywheel_closure_test.jsonl": {
+      "samples": 50,
+      "sha256": "71dcfae01518d695ddca4faf5c1dc22a3b55f8e61e159919cb840c39fef6fde6"
+    },
+    "data/eval/intent_test.jsonl": {
+      "samples": 315,
+      "sha256": "d92a2065bc8efa59feacf11396bca12e91bc04bc193ec90e27b7085373309b2c"
+    },
+    "data/eval/rag_blind_test.jsonl": {
+      "samples": 396,
+      "sha256": "defd245ec63291d153e002113f297fdcbc03908a726f8a7d6f78a9e40bb024da"
+    },
+    "data/eval/rag_dev.jsonl": {
+      "samples": 300,
+      "sha256": "fff86ace9f78b0bd5c7874ba3515d85bb3708a5a793cc867bd6fe423e2aefb75"
     }
   },
   "services": {
@@ -58,14 +98,14 @@
   },
   "tests": {
     "returncode": 0,
-    "passed": 529,
+    "passed": 668,
     "failed": 0,
     "errors": 0,
     "skipped": 2,
     "tail": [
-      "........................................................................ [ 94%]",
-      "...........................                                              [100%]",
-      "529 passed, 2 skipped in 65.66s (0:01:05)"
+      "........................................................................ [ 96%]",
+      "......................                                                   [100%]",
+      "668 passed, 2 skipped in 63.51s (0:01:03)"
     ]
   },
   "replay": [
