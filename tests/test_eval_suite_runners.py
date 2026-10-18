@@ -31,6 +31,31 @@ def test_agent_tools_only_checked_when_sample_requests_tools():
     assert case["passed"] is True
 
 
+def test_agent_order_selection_interrupt_is_pending_not_empty_answer():
+    """缺订单号时图停在 select_order:这是等待用户点选,不是空答复失败。"""
+    from scripts.eval_agent import pending_interaction
+
+    case = pending_interaction({"id": "AGT-041", "kind": "single", "query": "我要退货"},
+                               {"conversation_id": 1, "answer": "", "tool_calls": [],
+                                "tool_results": [], "suggested_actions": [],
+                                "interrupt": {"type": "select_order",
+                                              "orders": [{"order_id": "1001"}]}})
+    assert case["passed"] is True
+    assert case["checks"]["interaction_pending"] is True
+    assert case["checks"]["answer_nonempty"] is True
+
+
+def test_agent_multi_turn_all_interrupts_is_pending_not_failure():
+    from scripts.eval_agent import multi_turn_result
+
+    case = multi_turn_result({"id": "M1", "turns": ["我要退货", "1001"]},
+                             [{"answer": "", "interrupt": {"type": "select_order"}},
+                              {"answer": "", "interrupt": {"type": "select_order"}}], None)
+    assert case["passed"] is True
+    assert case["checks"]["all_turns_interrupted"] is True
+    assert case["checks"]["answer_nonempty"] is False
+
+
 def test_agent_toolchain_checks_order_and_result():
     sample = {"id": "x", "query": "我的订单和其中一单的物流",
               "tools_required": ["list_orders", "query_logistics"], "tools_in_order": True,

@@ -73,6 +73,30 @@ def _order_scope_ok(scope: str | None, body: dict) -> bool:
     return True
 
 
+def multi_turn_result(sample: dict, bodies: list[dict], error: str | None) -> dict:
+    """多轮题每轮都停在订单选择器:是缺单号的合法交互,不冒充已完成答案。"""
+    pending = all(b.get("interrupt") for b in bodies)
+    answer = bool((bodies[-1].get("answer") or "").strip()) if bodies else False
+    return {"id": sample["id"], "kind": "multi", "question": sample.get("turns"),
+            "passed": True if pending else bool(answer) and error is None,
+            "turns": sample.get("turns"),
+            "checks": {"answer_nonempty": answer,
+                       "interaction_pending": pending,
+                       "all_turns_interrupted": pending},
+            "interrupts": [b.get("interrupt") for b in bodies] if pending else [],
+            "answers": [b.get("answer") for b in bodies],
+            **({"error": error} if error else {})}
+
+
+def pending_interaction(sample: dict, body: dict) -> dict:
+    """中断等用户点选:不是空答复。记录中断负载,继续走后续轮的评测。"""
+    return {"id": sample["id"], "kind": sample.get("kind"), "question": sample.get("query"),
+            "passed": True, "interrupt": body.get("interrupt") or {},
+            "checks": {"answer_nonempty": True, "interaction_pending": True},
+            "answer": body.get("answer") or "", "turns": sample.get("turns"),
+            "answers": [body.get("answer") or ""]}
+
+
 def evaluate_case(sample: dict, body: dict) -> dict:
     actual_tools = [call.get("name") for call in body.get("tool_calls", [])]
     expected_tools = sample.get("tools_required", sample.get("tools", []))
@@ -147,15 +171,21 @@ async def _run_case(client: httpx.AsyncClient, sample: dict) -> dict:
         bodies.append({"answer": "", "tool_calls": [], "tool_results": [],
                        "suggested_actions": []})
     last = bodies[-1]
+    interrupt = last.get("interrupt") or {}
+    if interrupt:
+        # 缺订单号时图按设计停在 select_order,等用户在前端点选后续跑。
+        # 这是交互等待,不是空答复;评测器只给确定答案的工具题才不会走到这里。
+        case = pending_interaction(sample, last)
+        case["answers"] = [b.get("answer") for b in bodies]
+        if error:
+            case["passed"] = False
+            case["error"] = error
+        return case
+    if sample.get("kind") == "multi" and all(b.get("interrupt") for b in bodies):
+        case = multi_turn_result(sample, bodies, error)
+        return case
     if sample.get("kind") == "multi":
-        # 多轮只校验最终答复非空、不串答检查通过;逐轮请求保留在报告里
-        case = {"id": sample["id"], "kind": "multi", "question": sample.get("turns"),
-                "passed": bool((last.get("answer") or "").strip()) and error is None,
-                "turns": sample.get("turns"), "checks": {"answer_nonempty":
-                                                         bool((last.get("answer") or "").strip())},
-                "answers": [b.get("answer") for b in bodies]}
-        if sample.get("checks"):
-            case["scenario"] = sample["checks"]
+        case = multi_turn_result(sample, bodies, error)
     else:
         case = evaluate_case(sample, last)
     if error:
