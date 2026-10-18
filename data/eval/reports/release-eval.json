@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-10-18T19:11:23",
-  "git_sha": "554bec7ea762b123f36833248c96cead9c2e2f88",
+  "generated_at": "2026-10-19T01:10:04",
+  "git_sha": "028d4a79d28008c20bc4c76fd20603b1e448ce03",
   "stages": {
     "contract": {
-      "status": "passed",
-      "command": "/Users/huanghx/project/EcomAgent/.venv/bin/python -m pytest -q tests/test_eval_dataset_contracts.py",
+      "status": "not_run",
+      "command": "",
       "report": "",
       "metrics": {},
       "error": "",
-      "note": "......................                                                   [100%] 22 passed in 0.03s"
+      "note": "由主流程预置"
     },
     "unit": {
-      "status": "passed",
-      "command": "/Users/huanghx/project/EcomAgent/.venv/bin/python -m pytest -q",
+      "status": "not_run",
+      "command": "",
       "report": "",
       "metrics": {},
       "error": "",
-      "note": "........................................................................ [ 90%] .........................................................                [100%] 631 passed, 2 skipped in 64.27s (0:01:04)"
+      "note": "由主流程预置"
     },
     "rag": {
-      "status": "passed",
+      "status": "not_run",
       "command": "",
       "report": "/Users/huanghx/project/EcomAgent/data/ch04/reports/rag_eval.json",
       "metrics": {
@@ -41,6 +41,7 @@
           "false_pass_rate": 0.0,
           "false_refuse_rate": 0.5887
         },
+        "retrieval_complete": true,
         "complete": false,
         "generation_skipped": null,
         "false_pass": {
@@ -62,7 +63,7 @@
           ]
         }
       },
-      "error": "生成段未完成",
+      "error": "生成段未完成;仅检索指标可作部分证据",
       "note": "dataset=data/eval/rag_blind_test.jsonl;threshold=0.26"
     },
     "intent": {
@@ -125,6 +126,9 @@
     "status": "invalid_report",
     "passed": false,
     "failed_stages": [
+      "contract",
+      "unit",
+      "rag",
       "intent",
       "agent",
       "flywheel"
@@ -137,6 +141,9 @@
     "independent_release_evidence": false
   },
   "not_run_or_blocked": [
+    "contract",
+    "unit",
+    "rag",
     "intent",
     "agent",
     "flywheel"
