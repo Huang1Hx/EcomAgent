@@ -9,17 +9,24 @@ import asyncio
 import datetime as dt
 import hashlib
 import json
-import uuid
+import os
 from pathlib import Path
 
 import httpx
 
 from app.config import settings
 
-BASE = "http://localhost:8000"
+BASE = os.environ.get("EVAL_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
 DATASET = Path("data/eval/agent_test.jsonl")
 REPORT = Path("data/ch02/reports/agent_eval.json")
-SEM = asyncio.Semaphore(3)
+DEFAULT_CONCURRENCY = 1      # 上游会限流:逐题跑,避免 Agent 多步请求叠在一起被拒
+
+
+def agent_concurrency() -> int:
+    n = int(os.environ.get("AGENT_CONCURRENCY", DEFAULT_CONCURRENCY))
+    if n < 1:
+        raise ValueError("AGENT_CONCURRENCY 必须 >= 1")
+    return n
 
 
 def load_cases(path: Path = DATASET) -> list[dict]:
@@ -115,7 +122,7 @@ def _turns(sample: dict) -> list[str]:
 
 
 async def _run_case(client: httpx.AsyncClient, sample: dict) -> dict:
-    conversation_id = str(uuid.uuid4())
+    conversation_id = None
     bodies, error = [], None
     try:
         for turn in _turns(sample):
@@ -123,7 +130,9 @@ async def _run_case(client: httpx.AsyncClient, sample: dict) -> dict:
                                   json={"user_id": "eval-agent", "message": turn,
                                         "conversation_id": conversation_id})
             r.raise_for_status()
-            bodies.append(r.json())
+            body = r.json()
+            bodies.append(body)
+            conversation_id = body.get("conversation_id")
     except Exception as exc:
         error = f"{type(exc).__name__}: {exc}"
         bodies.append({"answer": "", "tool_calls": [], "tool_results": [],
@@ -156,9 +165,10 @@ async def main() -> int:
     if args.limit:
         cases = cases[:args.limit]
     out: list[dict] = []
+    sem = asyncio.Semaphore(agent_concurrency())
     async with httpx.AsyncClient(timeout=120) as client:
         for sample in cases:
-            async with SEM:
+            async with sem:
                 case = await _run_case(client, sample)
             out.append(case)
             print(f"{'✅' if case['passed'] else '❌'} {case['id']} "

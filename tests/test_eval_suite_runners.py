@@ -167,3 +167,58 @@ def test_isolated_service_uses_run_collection(monkeypatch):
     monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "flywheel_eval")
     monkeypatch.setenv("FLYWHEEL_EVAL_RUN_ID", "iso-test")
     assert eval_flywheel.isolated_collection("http://localhost:19530") != "knowledge"
+
+
+def test_intent_provider_failure_is_marked_not_counted():
+    from scripts import eval_intent
+
+    body = eval_intent.error_case("INT-X", RuntimeError("APITimeoutError"))
+    assert body["valid_output"] is False and body["correct"] is False
+    assert body["error"] == "RuntimeError: APITimeoutError"
+
+
+def test_intent_eval_concurrency_is_configurable_and_low(monkeypatch):
+    """学校上游限流:默认并发必须低,且可用 INTENT_CONCURRENCY 调到 1。"""
+    from scripts import eval_intent
+
+    monkeypatch.delenv("INTENT_CONCURRENCY", raising=False)
+    assert eval_intent.eval_concurrency() == 2
+    monkeypatch.setenv("INTENT_CONCURRENCY", "1")
+    assert eval_intent.eval_concurrency() == 1
+    monkeypatch.setenv("INTENT_CONCURRENCY", "0")
+    with pytest.raises(ValueError):
+        eval_intent.eval_concurrency()
+
+
+async def test_intent_eval_retries_rate_limit_with_backoff(monkeypatch):
+    """429/限流必须退避重试;重试成功不能记成判错,耗尽后才抛给调用点。"""
+    from scripts import eval_intent
+
+    calls = []
+
+    async def flaky():
+        calls.append(1)
+        if len(calls) < 3:
+            raise RuntimeError("429 rate limit")
+        return {"intent": "物流"}
+
+    sleeps = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(eval_intent, "_sleep", fake_sleep)
+    assert await eval_intent.with_rate_limit_retry(flaky, attempts=3, base_delay=1) == {
+        "intent": "物流"}
+    assert len(calls) == 3 and sleeps == [1, 2]
+
+
+def test_agent_eval_runs_serially_by_default(monkeypatch):
+    """Agent 单题会触发多步模型调用,默认必须串行;可用 AGENT_CONCURRENCY 显式调整。"""
+    from scripts import eval_agent
+
+    monkeypatch.delenv("AGENT_CONCURRENCY", raising=False)
+    assert eval_agent.agent_concurrency() == 1
+    monkeypatch.setenv("AGENT_CONCURRENCY", "0")
+    with pytest.raises(ValueError):
+        eval_agent.agent_concurrency()

@@ -8,6 +8,7 @@
 import argparse
 import asyncio
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -19,7 +20,35 @@ DATASET = ROOT / "data/eval/intent_test.jsonl"
 REPORT = ROOT / "data/ch06/reports/intent_eval.json"
 CLASSES = ["物流", "订单", "商品咨询", "退款退货", "售后", "投诉", "人工", "闲聊", "其他"]
 CONFUSION_LABEL = CLASSES + ["unknown"]
-SEM = asyncio.Semaphore(5)
+DEFAULT_CONCURRENCY = 2
+
+
+def eval_concurrency() -> int:
+    """并发上限;学校上游容易限流,默认只开 2,可用 INTENT_CONCURRENCY 调低。"""
+    n = int(os.environ.get("INTENT_CONCURRENCY", DEFAULT_CONCURRENCY))
+    if n < 1:
+        raise ValueError("INTENT_CONCURRENCY 必须 >= 1")
+    return n
+
+
+_RETRY_MARKERS = ("429", "rate limit", "timeout", "timed out", "500", "502", "503", "504")
+
+
+async def _sleep(seconds: float) -> None:
+    await asyncio.sleep(seconds)
+
+
+async def with_rate_limit_retry(factory, *, attempts: int = 3, base_delay: float = 2.0):
+    """限流/超时/5xx 退避重试;其它异常立即抛,重试耗尽后抛给调用点落 error。"""
+    for i in range(attempts):
+        try:
+            return await factory()
+        except Exception as exc:
+            text = f"{type(exc).__name__} {exc}".lower()
+            if i == attempts - 1 or not any(m in text for m in _RETRY_MARKERS):
+                raise
+            await _sleep(base_delay * (2 ** i))
+    raise RuntimeError("unreachable")
 
 
 def load_cases(path: Path = DATASET) -> list[dict]:
@@ -50,17 +79,34 @@ def prf(table: dict) -> dict:
     return out
 
 
-async def _one(case: dict) -> dict:
-    async with SEM:
-        r = await classify(case["query"], case.get("history"))
+async def _one(case: dict, sem: asyncio.Semaphore | None = None) -> dict:
+    label = f"{case['id']} {case['query']}"
+    print(f"→ {label}", flush=True)
+    if sem is None:
+        sem = asyncio.Semaphore(eval_concurrency())
+    async with sem:
+        try:
+            r = await with_rate_limit_retry(
+                lambda: classify(case["query"], case.get("history")))
+        except Exception as exc:  # noqa: BLE001 上游错误必须落报告,不能当成判错
+            print(f"✗ {label} {type(exc).__name__}", flush=True)
+            return error_case(case["id"], exc)
     intent = r.get("intent")
     conf = r.get("confidence")
     valid_json = intent in CLASSES and isinstance(conf, (int, float)) and 0 <= conf <= 1
     gold = case.get("expect_intent")
+    mark = "✓" if gold is not None and intent == gold else ("·" if gold is None else "✗")
+    print(f"{mark} {label} {gold}->{intent}", flush=True)
     return {"id": case["id"], "kind": case["kind"], "query": case["query"],
             "expected": gold, "actual": intent, "confidence": conf,
             "valid_output": valid_json, "correct": gold is not None and intent == gold,
             "review_status": case.get("review_status")}
+
+
+def error_case(case_id: str, exc: Exception) -> dict:
+    return {"id": case_id, "kind": "error", "query": "", "expected": None, "actual": None,
+            "confidence": None, "valid_output": False, "correct": False,
+            "error": f"{type(exc).__name__}: {exc}"}
 
 
 async def main() -> int:
@@ -70,7 +116,9 @@ async def main() -> int:
     cases = load_cases()
     if args.limit:
         cases = cases[:args.limit]
-    results = await asyncio.gather(*(_one(c) for c in cases))
+    sem = asyncio.Semaphore(eval_concurrency())
+    results = await asyncio.gather(*(_one(c, sem) for c in cases))
+    errors = [r for r in results if r.get("error")]
     labeled = [(r["actual"], r["expected"], r["kind"]) for r in results
                if r["expected"] is not None]
     table = confusion([p for p, _, _ in labeled], [g for _, g, _ in labeled], CLASSES)
@@ -86,6 +134,7 @@ async def main() -> int:
                  "independent_release_evidence": False,
                  "chat_model": settings.intent_model or settings.chat_model,
                  "n": len(cases), "n_labeled": len(labeled)},
+        **({"error": errors[0]["error"], "error_count": len(errors)} if errors else {}),
         "summary": {"correct": correct, "total": len(labeled),
                     "accuracy": round(correct / len(labeled), 4) if labeled else None,
                     "invalid_output": sum(not r["valid_output"] for r in results),
@@ -106,7 +155,7 @@ async def main() -> int:
           f"漂移 {payload['summary']['drift_correct']}/{len(drift)};"
           f"边界落其他 {payload['summary']['boundary_other']}/{len(boundary)}")
     print(f"报告:{REPORT.relative_to(ROOT)}(AI 辅助未审核数据集,不构成人工复核证据)")
-    return 0
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
