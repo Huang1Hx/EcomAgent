@@ -34,7 +34,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATASET = ROOT / "data/eval/flywheel_closure_test.jsonl"
 REPORT = ROOT / "data/ch09/reports/flywheel_closure_eval.json"
 BASE = "http://127.0.0.1:8000"
-COLLECTION = os.environ.get("FLYWHEEL_EVAL_MILVUS_COLLECTION") or "flywheel_eval"
+COLLECTION = "flywheel_eval"
 ANSWER = "评测环境预置标准答复:飞轮写回后应能再次检索到该知识。"
 WRITEBACK_ENDPOINT = "/api/kb/search"
 
@@ -57,6 +57,10 @@ def iso_env(base_url: str | None = None) -> tuple[str, str]:
         raise SystemExit("拒绝运行:同一 Milvus 实例必须使用独立集合,不能写 knowledge。")
     if base_url is None or base_url.rstrip("/") == BASE:
         raise SystemExit("拒绝运行:EVAL_BASE_URL 必须指向隔离服务,不能使用线上服务地址。")
+    if (os.environ.get("MILVUS_COLLECTION")
+            and os.environ["MILVUS_COLLECTION"] != isolated_collection(milvus)):
+        raise SystemExit("拒绝运行:隔离服务的 MILVUS_COLLECTION 必须与本评测集合一致"
+                         f"({isolated_collection(milvus)}),否则写回后再检索会落在线上 knowledge。")
     return db, milvus
 
 

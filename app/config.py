@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     # ch03 知识库检索
     embed_model: str = "BAAI/bge-m3"          # 上游真实名(无网关别名可用)
     milvus_uri: str = "http://localhost:19530"   # ch04: Lite → Standalone
+    # 隔离评测(如飞轮闭环)用独立集合,避免把评测写回混进线上 knowledge;默认线上集合不变
+    milvus_collection: str = "knowledge"
     # ch04 混合检索 + 重排
     rerank_model: str = "BAAI/bge-reranker-v2-m3"   # 上游真实名
     recall_top_k: int = 50        # dense/BM25 各召回 Top-50

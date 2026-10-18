@@ -379,6 +379,32 @@ def test_isolated_milvus_uses_dedicated_collection(monkeypatch):
         eval_flywheel.isolated_collection("http://localhost:19531")
 
 
+def test_run_id_appends_to_configured_collection(monkeypatch):
+    from scripts import eval_flywheel
+
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "flywheel_eval")
+    monkeypatch.setenv("FLYWHEEL_EVAL_RUN_ID", "iso-test")
+    assert eval_flywheel.isolated_collection("http://localhost:19530") == "flywheel_eval_iso-test"
+
+
+def test_isolated_service_collection_must_match_eval(monkeypatch):
+    """隔离服务集合若仍停在 knowledge,写回后检索必然读线上库,必须在启动评测前拒绝。"""
+    from app.config import settings
+    from scripts import eval_flywheel
+
+    monkeypatch.setenv("FLYWHEEL_EVAL_DATABASE_URL", settings.database_url.replace(
+        "/mewhelp", "/mewhelp_flywheel_eval"))
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_URI", settings.milvus_uri)
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "flywheel_eval")
+    monkeypatch.setenv("FLYWHEEL_EVAL_RUN_ID", "iso-test")
+    monkeypatch.setenv("MILVUS_COLLECTION", "knowledge")
+    with pytest.raises(SystemExit, match="MILVUS_COLLECTION"):
+        eval_flywheel.iso_env("http://127.0.0.1:8010")
+    monkeypatch.setenv("MILVUS_COLLECTION", "flywheel_eval_iso-test")
+    db, _ = eval_flywheel.iso_env("http://127.0.0.1:8010")
+    assert db.endswith("/mewhelp_flywheel_eval")
+
+
 def test_isolated_milvus_same_instance_is_allowed(monkeypatch):
     from app.config import settings
     from scripts import eval_flywheel

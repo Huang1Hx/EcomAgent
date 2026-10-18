@@ -50,9 +50,14 @@ def test_retrieval_summary_keeps_numerator_and_denominator():
 
 
 def test_saved_report_denominators_match_samples():
+    import subprocess
+
     from scripts.rag_diagnosis import check_saved_report
     rows = [json.loads(l) for l in open("data/eval/rag_blind_test.jsonl") if l.strip()]
-    report = json.load(open("data/ch04/reports/rag_eval.json"))
+    # 工作区的 rag_eval.json 可能正被小样/中断运行覆盖;此测试锁的是已提交的全量历史口径
+    saved = subprocess.run(["git", "show", "HEAD:data/ch04/reports/rag_eval.json"],
+                           capture_output=True, text=True, check=True).stdout
+    report = json.loads(saved)
     out = check_saved_report(rows, report)
     assert out["answerable"]["report"] == 282
     assert out["absent"]["report"] == 114

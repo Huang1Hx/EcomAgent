@@ -8,7 +8,7 @@ from pymilvus import (
 
 from app.config import settings
 
-COLLECTION = "knowledge"
+COLLECTION = settings.milvus_collection
 DIM = 1024
 
 # 专用单线程执行器:同步 pymilvus(gRPC)客户端在多线程间共享会间歇静默返回空
@@ -136,3 +136,5 @@ def count(client, collection: str | None = None) -> int:
 def drop(client, collection: str) -> None:
     if client.has_collection(collection):
         client.drop_collection(collection)
+    # 集合已不存在:ensure 的进程内缓存必须同步失效,否则下次检索跳过重建直接报 collection not found
+    _ensured.discard(collection)

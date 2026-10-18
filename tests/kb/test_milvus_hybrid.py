@@ -47,3 +47,14 @@ def test_category_filter(coll):
     hits = mc.bm25_search(client, "型号 运费", top_k=5, category="运费", collection=name)
     assert all(h["category"] == "运费" for h in hits)
     assert all(h["id"] == 1 for h in hits)
+
+
+def test_drop_forgets_ensure_cache():
+    """隔离集合删掉后,ensure 缓存若仍认为已建好,检索不会重建而直接 502 collection not found。"""
+    shared = mc.get_client(uri=URI)
+    name = "test_kb_drop_cache"
+    mc.ensure_collection(shared, collection=name)
+    assert name in mc._ensured
+    mc.drop(shared, name)
+    assert name not in mc._ensured
+    assert not shared.has_collection(name)
