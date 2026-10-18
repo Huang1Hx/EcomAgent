@@ -26,12 +26,13 @@ def _batches(items: list, size: int):
         yield items[i:i + size]
 
 
-async def vectorize_pending(client=None, batch_size: int = 64, collection: str = milvus_client.COLLECTION) -> int:
+async def vectorize_pending(client=None, batch_size: int = 64, collection: str | None = None) -> int:
     """幂等可重跑:取 pending → 拼 category+questions+answer → 嵌入 + BM25 text → Milvus upsert(PK=id)
     → 回填 vector_id、status=done。
     ch09:client 缺省时在 Milvus 专用线程内惰性创建,upsert/flush 也走 acall——
     server 进程(审核通过写回)与脚本两个场景共用一条安全路径(gRPC 客户端跨线程
     共享在 async server 下会间歇空返回,见 retrieval.py 注)。"""
+    collection = collection or milvus_client.COLLECTION
     pending = await repository.list_pending_chunks()
     done = 0
     for batch in _batches(pending, batch_size):

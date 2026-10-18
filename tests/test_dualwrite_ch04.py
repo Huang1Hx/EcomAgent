@@ -28,3 +28,12 @@ async def test_vectorize_writes_bm25_and_metadata(db_session_factory, monkeypatc
     hits = mc.bm25_search(client, "运费", top_k=1, collection=name)
     assert hits and hits[0]["section_path"] == "运费政策" and hits[0]["category"] == "运费"
     mc.drop(client, name)
+
+
+def test_vectorize_pending_defaults_to_runtime_collection():
+    """隔离评测运行时切换 milvus_client.COLLECTION;向量化不能落到导入时冻结的 knowledge。"""
+    import inspect
+
+    from app.kb import dualwrite
+
+    assert inspect.signature(dualwrite.vectorize_pending).parameters["collection"].default is None
