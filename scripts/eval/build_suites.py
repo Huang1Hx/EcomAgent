@@ -717,11 +717,23 @@ CONTEXT_FACTS = [
 
 
 def context_rows() -> list[dict]:
+    """多轮事实锚定集:每段显式给出对话,事实先陈述、后追问;AI 辅助模板生成,未经人工审核。"""
     rows = []
     for i in range(50):
         facts = [{"value": v, "question": q} for v, q in CONTEXT_FACTS]
+        messages = []
+        for turn in range(24):
+            f = facts[turn % len(facts)]
+            messages += [{"role": "user", "content": f["question"]},
+                         {"role": "assistant", "content": f["value"]},
+                         {"role": "user", "content": f"补充第{turn + 1}条：请继续跟进。"},
+                         {"role": "assistant", "content": "好的，已记录。"}]
+        for f in facts:
+            messages += [{"role": "user", "content": f["question"]},
+                         {"role": "assistant", "content": f["value"]}]
         rows.append(_common(f"CTX-{i + 1:03d}", "context", "test", "ai_assisted_multi_turn",
-                            {"turns": 30, "facts": facts,
+                            {"turns": sum(1 for m in messages if m["role"] == "user"),
+                             "facts": facts, "messages": messages,
                              "checks": ["fact_retention", "false_inheritance",
                                         "avg_input_tokens", "p95_latency"]}))
     return rows

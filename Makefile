@@ -2,7 +2,7 @@
 # (知识库、评估集)会抛 UnicodeDecodeError。必须在 Python 启动前生效,所以设在这里而不是 .env。
 export PYTHONUTF8 = 1
 
-.PHONY: help classifier-bootstrap kb-repatch dev test eval eval-check judge-check seed eval-ch07 eval-agent eval-intent eval-suites eval-flywheel-closure kb-preview kb-build kb-vectorize kb-mine eval-retrieval seed-conv eval-mining kb-reset milvus-up milvus-down smoke-rag eval-rag smoke-interrupt eval-ch06 mcp-up mcp-down langfuse-up langfuse-down
+.PHONY: help classifier-bootstrap kb-repatch dev test eval eval-check judge-check seed eval-ch07 eval-agent eval-intent eval-suites eval-flywheel-closure eval-context kb-preview kb-build kb-vectorize kb-mine eval-retrieval seed-conv eval-mining kb-reset milvus-up milvus-down smoke-rag eval-rag smoke-interrupt eval-ch06 mcp-up mcp-down langfuse-up langfuse-down
 
 # 目标一多就记不住谁要什么前置条件,带 ## 注释的挑出来列一遍
 help:  ## 列出带说明的目标
@@ -136,6 +136,10 @@ eval-suites:  ## Task 3 重建分层评测集与 manifest(AI 辅助未审核)
 
 eval-flywheel-closure:  ## 飞轮闭环(仅隔离环境;须设 FLYWHEEL_EVAL_DATABASE_URL/MILVUS_URI)
 	PYTHONPATH=. uv run python scripts/eval_flywheel.py
+
+eval-context:  ## 上下文固定集(确定性三层装配口径,不调模型)
+	PYTHONPATH=. uv run python scripts/eval_context.py
+
 
 eval-ch05:
 	uv run python scripts/eval_ch05.py
