@@ -167,3 +167,17 @@ def test_rag_evidence_requires_complete_generation_and_refusal(tmp_path):
 def test_rag_report_error_marks_service_unavailable(tmp_path):
     p = _write(tmp_path, "rag_eval.json", {"meta": {}, "error": "检索服务不可用"})
     assert rr.collect(tmp_path, require_flywheel=False, expected={})["rag"]["status"] == "service_unavailable"
+
+
+def test_main_runs_selected_stages_without_shadowing_stage(monkeypatch, tmp_path):
+    """main() 里循环变量曾命名 stage,遮蔽同名构造函数,真实跑 contract/unit 会 UnboundLocalError。"""
+    calls = []
+
+    def fake_run(cmd, item, env=None):
+        calls.append(cmd)
+        return {**item, "status": "passed"}
+
+    monkeypatch.setattr(rr, "_run", fake_run)
+    code = rr.main(["--stages", "contract,unit", "--skip-flywheel"])
+    assert calls
+    assert code != 0          # 其他阶段未运行/旧报告不通过,总状态不得判通过

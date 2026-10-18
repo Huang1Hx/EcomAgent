@@ -500,16 +500,16 @@ def main(argv: list[str] | None = None) -> int:
             stages["classifier"] = stage("not_run", note="由产物重新聚合")
     current = collect(ROOT / "data", require_flywheel=True)
     if not args.aggregate_only:
-        for name, stage in stages.items():
+        for name, item in stages.items():
             if name == "classifier":
                 continue
             if name == "context":
-                current[name] = _merge_report_status(stage, current[name])
+                current[name] = _merge_report_status(item, current[name])
                 continue
             if name in ("contract", "unit"):
-                current[name] = stage
+                current[name] = item
                 continue
-            current[name] = _merge_report_status(stage, current[name])
+            current[name] = _merge_report_status(item, current[name])
     payload = _conformance_data(current)
     (REPORTS / "release-eval.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

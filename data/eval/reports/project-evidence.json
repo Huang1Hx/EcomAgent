@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-10-18T18:28:26",
-  "git_sha": "1e51b391a64eddcbf69975e5f38814b6374b7ce6",
+  "generated_at": "2026-10-18T19:11:23",
+  "git_sha": "554bec7ea762b123f36833248c96cead9c2e2f88",
   "items": [
     {
       "capability": "BGE-M3 + BM25 + RRF + BGE-Reranker",
@@ -40,7 +40,7 @@
     },
     {
       "capability": "架构决策可追溯性",
-      "status": "partially_supported",
+      "status": "supported",
       "report": "data/eval/reports/release-eval.json",
       "statement": "按提交、报告和数据集合同追溯;仅当前证据"
     }

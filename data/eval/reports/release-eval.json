@@ -1,22 +1,22 @@
 {
-  "generated_at": "2026-10-18T18:28:26",
-  "git_sha": "1e51b391a64eddcbf69975e5f38814b6374b7ce6",
+  "generated_at": "2026-10-18T19:11:23",
+  "git_sha": "554bec7ea762b123f36833248c96cead9c2e2f88",
   "stages": {
     "contract": {
-      "status": "not_run",
-      "command": "",
+      "status": "passed",
+      "command": "/Users/huanghx/project/EcomAgent/.venv/bin/python -m pytest -q tests/test_eval_dataset_contracts.py",
       "report": "",
       "metrics": {},
       "error": "",
-      "note": "由主流程预置"
+      "note": "......................                                                   [100%] 22 passed in 0.03s"
     },
     "unit": {
-      "status": "not_run",
-      "command": "",
+      "status": "passed",
+      "command": "/Users/huanghx/project/EcomAgent/.venv/bin/python -m pytest -q",
       "report": "",
       "metrics": {},
       "error": "",
-      "note": "由主流程预置"
+      "note": "........................................................................ [ 90%] .........................................................                [100%] 631 passed, 2 skipped in 64.27s (0:01:04)"
     },
     "rag": {
       "status": "passed",
@@ -125,8 +125,6 @@
     "status": "invalid_report",
     "passed": false,
     "failed_stages": [
-      "contract",
-      "unit",
       "intent",
       "agent",
       "flywheel"
@@ -139,8 +137,6 @@
     "independent_release_evidence": false
   },
   "not_run_or_blocked": [
-    "contract",
-    "unit",
     "intent",
     "agent",
     "flywheel"
