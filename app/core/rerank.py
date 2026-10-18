@@ -21,8 +21,8 @@ def _rerank_url() -> str:
 
 
 _RETRY_STATUS = {429, 500, 502, 503, 504}
-_RETRIES = 3          # 限流退避重试次数
-_BACKOFF = 1.5        # 秒,每次翻倍
+_RETRIES = 6          # 限流退避重试次数:连续 429 时给足恢复窗口
+_BACKOFF = 1.0        # 秒,每次翻倍(1,2,4,8,16,32)
 
 
 async def _post(url, json, headers, timeout):

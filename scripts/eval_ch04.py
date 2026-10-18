@@ -59,6 +59,17 @@ GEN_CONCURRENCY = 5    # 生成并发。这一段是整轮的时间大头:300 �
                        # 一轮评估把配额吃满,同时在用的其他调用就开始 429)
 CALL_TIMEOUT = 45.0    # 单次 glm 调用超时(秒),防卡死
 
+
+def eval_concurrency(retr: int = RETR_CONCURRENCY, gen: int = GEN_CONCURRENCY) -> tuple[int, int]:
+    """检索/生成并发;上游限流时用 RAG_RETR_CONCURRENCY / RAG_GEN_CONCURRENCY 压低。"""
+    import os
+    rt = int(os.environ.get("RAG_RETR_CONCURRENCY", retr))
+    gn = int(os.environ.get("RAG_GEN_CONCURRENCY", gen))
+    if rt < 1 or gn < 1:
+        raise ValueError("RAG_RETR_CONCURRENCY / RAG_GEN_CONCURRENCY 必须 >= 1")
+    return rt, gn
+
+
 _retr_sem = asyncio.Semaphore(RETR_CONCURRENCY)
 _gen_sem = asyncio.Semaphore(GEN_CONCURRENCY)
 _errs: list[str] = []
@@ -219,6 +230,22 @@ async def _try(factory, label):
                 continue
             _errs.append(f"{label}: {type(e).__name__}")
     return None
+
+
+async def with_progress(coros, on_done):
+    """按完成顺序回调,给长跑生成段报进度;结果顺序与输入一致。"""
+    out = [None] * len(coros)
+    done = 0
+
+    async def _wait(i: int, coro):
+        out[i] = await coro
+        return i
+
+    for fut in asyncio.as_completed([_wait(i, c) for i, c in enumerate(coros)]):
+        await fut
+        done += 1
+        on_done(done)
+    return out
 
 
 def _mean(xs):
@@ -404,7 +431,12 @@ async def _generation(samples, HITS):
     tasks = [_gen_one(strat, s, HITS, model, cov_judge, faith_judge, cov_prompt, faith_prompt)
              for strat in STRATEGIES for s in graded]
     tasks += [_refusal_one(s) for s in absent]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    def _done(n: int) -> None:
+        if n % 50 == 0 or n == len(tasks):
+            _log(f"  生成/拒答进度 {n}/{len(tasks)}")
+
+    results = await with_progress(tasks, _done)
 
     n_gen = len(STRATEGIES) * len(graded)
     gen_results = [r for r in results[:n_gen] if isinstance(r, dict)]

@@ -104,3 +104,28 @@ async def test_断连重试到底仍失败就抛出去(monkeypatch):
 
     with pytest.raises(rr.httpx.ConnectError):
         await rr._post("http://x/rerank", {}, {}, 5)
+
+
+async def test_持续限流会多退避几次再成功(monkeypatch):
+    """学校/嵌入上游会连续回 429;只退 3 次容易整轮评测白跑,应至少撑到第 5 次重试。"""
+    calls = {"n": 0}
+
+    class _Resp:
+        def __init__(self, code):
+            self.status_code = code
+
+    class _Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, *a, **kw):
+            calls["n"] += 1
+            return _Resp(429 if calls["n"] < 6 else 200)
+
+    monkeypatch.setattr(rr.httpx, "AsyncClient", lambda *a, **kw: _Client())
+    monkeypatch.setattr(rr.asyncio, "sleep", _noop_sleep)
+    resp = await rr._post("http://x/rerank", {}, {}, 5)
+    assert resp.status_code == 200 and calls["n"] == 6

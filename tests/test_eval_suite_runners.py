@@ -1,4 +1,6 @@
 """Task 3 评测器:意图混淆矩阵、Agent 工具/顺序/归属、置信度固定阈值口径。"""
+import pytest
+
 from scripts.eval_agent import evaluate_case, load_cases
 from scripts.eval_ch04 import refusal_metrics
 from scripts.eval_intent import confusion, prf
@@ -67,3 +69,29 @@ def test_milvus_search_defaults_resolve_collection_at_call_time():
     for fn in (milvus_client.dense_search, milvus_client.bm25_search,
                milvus_client.hybrid_search, milvus_client.count):
         assert inspect.signature(fn).parameters["collection"].default is None
+
+
+def test_eval_ch04_concurrency_is_configurable(monkeypatch):
+    """学校上游限流:检索/生成并发必须可压到 1,默认仍保持原有水平。"""
+    from scripts import eval_ch04
+
+    monkeypatch.delenv("RAG_RETR_CONCURRENCY", raising=False)
+    monkeypatch.delenv("RAG_GEN_CONCURRENCY", raising=False)
+    assert eval_ch04.eval_concurrency() == (5, 5)
+    monkeypatch.setenv("RAG_RETR_CONCURRENCY", "1")
+    monkeypatch.setenv("RAG_GEN_CONCURRENCY", "1")
+    assert eval_ch04.eval_concurrency() == (1, 1)
+
+
+async def test_eval_ch04_reports_progress_each_completed_item():
+    """串行长跑必须逐题报进度,否则标准输出只在结束时才有内容,无法判断是否卡住。"""
+    from scripts import eval_ch04
+
+    lines = []
+
+    async def work(n):
+        return n
+
+    out = await eval_ch04.with_progress([work(1), work(2), work(3)],
+                                        lambda n: lines.append(n))
+    assert out == [1, 2, 3] and lines == [1, 2, 3]
