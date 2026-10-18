@@ -50,7 +50,7 @@ def arrange_head_tail(items: list) -> list:
 
 async def search_knowledge(
     query: str, strategy: str = "hybrid_rerank", top_k: int | None = None,
-    category: str | None = None, client=None, collection: str = "knowledge",
+    category: str | None = None, client=None, collection: str | None = None,
     bm25_text: str | None = None, split: bool = True,
 ) -> list[dict]:
     """strategy: vector | bm25 | hybrid | hybrid_rerank。
@@ -63,6 +63,7 @@ async def search_knowledge(
     客户端也在该线程惰性创建 —— 规避 gRPC 客户端跨线程共享在 async server 下的间歇空返回。
     """
     top_k = top_k or settings.rerank_top_k
+    collection = collection or milvus_client.COLLECTION
     bt = bm25_text or query  # BM25 检索文本;dense 始终用干净的 query
 
     # 一问多意图:按子句各检索一遍再轮转合并,免得一个意图把名额占满(见 split_clauses)

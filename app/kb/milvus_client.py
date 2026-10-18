@@ -23,6 +23,7 @@ async def acall(fn, *args, **kwargs):
     return await loop.run_in_executor(_EXECUTOR, functools.partial(fn, *args, **kwargs))
 
 _CLIENT: MilvusClient | None = None
+_CLIENT_URI: str | None = None
 _ensured: set[str] = set()
 
 _OUTPUT = ["question", "answer", "section_path", "content_type", "category"]
@@ -30,11 +31,15 @@ _OUTPUT = ["question", "answer", "section_path", "content_type", "category"]
 
 def get_client(uri: str | None = None) -> MilvusClient:
     """默认返回进程内单例(连 Standalone);传 uri(测试)返回独立客户端。"""
-    global _CLIENT
-    if uri is not None:
+    global _CLIENT, _CLIENT_URI
+    if uri is not None and uri != settings.milvus_uri:
         return MilvusClient(uri=uri)
+    if _CLIENT is not None and _CLIENT_URI != settings.milvus_uri:
+        _CLIENT.close()
+        _CLIENT = None
     if _CLIENT is None:
-        _CLIENT = MilvusClient(uri=settings.milvus_uri)
+        _CLIENT = MilvusClient(uri=uri or settings.milvus_uri)
+        _CLIENT_URI = uri or settings.milvus_uri
     return _CLIENT
 
 
@@ -93,7 +98,8 @@ def _hit(h: dict) -> dict:
             "category": e["category"]}
 
 
-def dense_search(client, vector, top_k, category=None, collection=COLLECTION) -> list[dict]:
+def dense_search(client, vector, top_k, category=None, collection: str | None = None) -> list[dict]:
+    collection = collection or COLLECTION
     res = client.search(collection, data=[vector], anns_field="dense", limit=top_k,
                         output_fields=_OUTPUT, search_params={"metric_type": "COSINE"},
                         filter=_cat_expr(category))
@@ -101,14 +107,17 @@ def dense_search(client, vector, top_k, category=None, collection=COLLECTION) ->
     return [_hit(h) for h in res[0]]
 
 
-def bm25_search(client, text, top_k, category=None, collection=COLLECTION) -> list[dict]:
+def bm25_search(client, text, top_k, category=None, collection: str | None = None) -> list[dict]:
+    collection = collection or COLLECTION
     res = client.search(collection, data=[text], anns_field="sparse", limit=top_k,
                         output_fields=_OUTPUT, search_params={"metric_type": "BM25"},
                         filter=_cat_expr(category))
     return [_hit(h) for h in res[0]]
 
 
-def hybrid_search(client, vector, text, top_k, recall=50, category=None, collection=COLLECTION) -> list[dict]:
+def hybrid_search(client, vector, text, top_k, recall=50, category=None,
+                  collection: str | None = None) -> list[dict]:
+    collection = collection or COLLECTION
     expr = _cat_expr(category)
     dense_req = AnnSearchRequest(data=[vector], anns_field="dense",
                                  param={"metric_type": "COSINE"}, limit=recall, expr=expr)
@@ -119,7 +128,8 @@ def hybrid_search(client, vector, text, top_k, recall=50, category=None, collect
     return [_hit(h) for h in res[0]]
 
 
-def count(client, collection: str = COLLECTION) -> int:
+def count(client, collection: str | None = None) -> int:
+    collection = collection or COLLECTION
     return client.query(collection, filter="id >= 0", output_fields=["count(*)"])[0]["count(*)"]
 
 

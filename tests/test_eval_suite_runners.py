@@ -56,3 +56,14 @@ def test_refusal_metrics_use_fixed_threshold():
     m = refusal_metrics(samples, hits, threshold=0.26)
     assert m["answerable"]["wrongly_refused"] == 1
     assert m["absent"]["correct"] == 1
+
+
+def test_milvus_search_defaults_resolve_collection_at_call_time():
+    """隔离评测会在运行时切换 milvus_client.COLLECTION;默认参数不能冻在导入时的名字上。"""
+    import inspect
+
+    from app.kb import milvus_client
+
+    for fn in (milvus_client.dense_search, milvus_client.bm25_search,
+               milvus_client.hybrid_search, milvus_client.count):
+        assert inspect.signature(fn).parameters["collection"].default is None
