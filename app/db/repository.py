@@ -438,6 +438,17 @@ async def fetch_unmatched_low_conf(limit: int) -> list[LowConfidenceQuestion]:
         return list(result.scalars())
 
 
+async def list_low_conf_by_conversation(conversation_id: int) -> list[LowConfidenceQuestion]:
+    """按会话取池内原话(隔离评测用:精确归并本次请求落池的行,不误认历史同题)。"""
+    async with db.async_session() as s:
+        result = await s.execute(
+            select(LowConfidenceQuestion)
+            .where(LowConfidenceQuestion.conversation_id == conversation_id)
+            .order_by(LowConfidenceQuestion.id)
+        )
+        return list(result.scalars())
+
+
 async def list_review_candidates(limit: int = 200) -> list[dict]:
     """查重候选:全部状态的缺口行(用户拍板:比全部,驳回即终审),updated_at 倒序截断防 token 爆。"""
     async with db.async_session() as s:

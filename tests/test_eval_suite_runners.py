@@ -95,3 +95,75 @@ async def test_eval_ch04_reports_progress_each_completed_item():
     out = await eval_ch04.with_progress([work(1), work(2), work(3)],
                                         lambda n: lines.append(n))
     assert out == [1, 2, 3] and lines == [1, 2, 3]
+
+
+def test_flywheel_requires_isolated_service_url():
+    from scripts import eval_flywheel
+
+    with pytest.raises(SystemExit, match="隔离"):
+        eval_flywheel.iso_env(base_url="http://127.0.0.1:8000")
+
+
+def test_flywheel_reports_failed_writeback_assertion():
+    from scripts import eval_flywheel
+
+    stats = {"in_pool": 1, "review_items": 1, "approved": 0, "chunks_written": 1,
+             "vectorized": 0}
+    assert eval_flywheel.writeback_problems(stats) == ["approved", "vectorized"]
+    assert eval_flywheel.writeback_problems(
+        {"in_pool": 1, "review_items": 1, "approved": 1, "chunks_written": 1,
+         "vectorized": 1}) == []
+
+
+def test_isolated_milvus_uses_dedicated_collection(monkeypatch):
+    from scripts import eval_flywheel
+
+    monkeypatch.delenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", raising=False)
+    assert eval_flywheel.isolated_collection("http://localhost:19530") == "flywheel_eval"
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "fw_iso")
+    assert eval_flywheel.isolated_collection("http://localhost:19530") == "fw_iso"
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "knowledge")
+    with pytest.raises(SystemExit, match="knowledge"):
+        eval_flywheel.isolated_collection("http://localhost:19531")
+
+
+def test_isolated_milvus_same_instance_is_allowed(monkeypatch):
+    from app.config import settings
+    from scripts import eval_flywheel
+
+    monkeypatch.setenv("FLYWHEEL_EVAL_DATABASE_URL", settings.database_url.replace(
+        "/mewhelp", "/mewhelp_flywheel_eval"))
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_URI", settings.milvus_uri)
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "flywheel_eval")
+    db, milvus = eval_flywheel.iso_env("http://127.0.0.1:8010")
+    assert db.endswith("/mewhelp_flywheel_eval") and milvus == settings.milvus_uri
+
+
+def test_flywheel_matches_rows_from_current_run_only():
+    from types import SimpleNamespace
+
+    from scripts import eval_flywheel
+
+    cases = [{"raw_question": "当前题"}, {"raw_question": "历史题"}]
+    rows = [SimpleNamespace(conversation_id=1, matched_review_id=None, raw_question="当前题"),
+            SimpleNamespace(conversation_id=2, matched_review_id=None, raw_question="历史题")]
+    found, missing = eval_flywheel.match_pool_rows(rows, cases, {1})
+    assert list(found) == ["当前题"] and missing == ["历史题"]
+
+
+def test_flywheel_does_not_count_merged_rows():
+    from types import SimpleNamespace
+
+    from scripts import eval_flywheel
+
+    rows = [SimpleNamespace(conversation_id=1, matched_review_id=9, raw_question="已归并")]
+    found, missing = eval_flywheel.match_pool_rows(rows, [{"raw_question": "已归并"}], {1})
+    assert found == {} and missing == ["已归并"]
+
+
+def test_isolated_service_uses_run_collection(monkeypatch):
+    from scripts import eval_flywheel
+
+    monkeypatch.setenv("FLYWHEEL_EVAL_MILVUS_COLLECTION", "flywheel_eval")
+    monkeypatch.setenv("FLYWHEEL_EVAL_RUN_ID", "iso-test")
+    assert eval_flywheel.isolated_collection("http://localhost:19530") != "knowledge"
