@@ -68,3 +68,42 @@ async def test_query_faq_self_check_fail(monkeypatch):
     out = await faq.query_faq.ainvoke({"keyword": "Pro型号能自动铲屎吗"})
     assert out["sufficient"] is False and out["source"] == "self_check"
     assert "型号" in out["reason"]
+
+
+@pytest.mark.asyncio
+async def test_query_faq_provider_fallback_is_visible_to_evaluator(monkeypatch):
+    async def fake_understand(q):
+        return {"standard": q, "expanded": [], "provider_error": "query_rewrite",
+                "provider_status_code": 499}
+
+    async def fake_search(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr("app.core.query_understanding.understand", fake_understand)
+    monkeypatch.setattr("app.core.retrieval.search_knowledge", fake_search)
+    out = await faq.query_faq.ainvoke({"keyword": "邮费"})
+    assert out["sufficient"] is False
+    assert out["provider_error"] == "query_rewrite"
+    assert out["provider_status_code"] == 499
+
+
+@pytest.mark.asyncio
+async def test_query_faq_selfcheck_provider_failure_is_not_normal_insufficiency(monkeypatch):
+    async def fake_understand(q):
+        return {"standard": q, "expanded": []}
+
+    async def fake_search(*args, **kwargs):
+        return [{"id": 1, "rerank_score": 0.9, "question": "运费", "answer": "满99包邮",
+                 "section_path": "政策", "content_type": "faq"}]
+
+    async def fake_check(q, texts):
+        return {"useful": False, "reason": "证据自评失败", "provider_error": "self_check",
+                "provider_status_code": 499}
+
+    monkeypatch.setattr("app.core.query_understanding.understand", fake_understand)
+    monkeypatch.setattr("app.core.retrieval.search_knowledge", fake_search)
+    monkeypatch.setattr("app.core.selfcheck.check_sufficient", fake_check)
+    out = await faq.query_faq.ainvoke({"keyword": "运费"})
+    assert out["sufficient"] is False and out["source"] == "self_check"
+    assert out["provider_error"] == "self_check"
+    assert out["provider_status_code"] == 499

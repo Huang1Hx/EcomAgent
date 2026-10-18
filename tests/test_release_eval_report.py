@@ -158,10 +158,74 @@ def test_rag_evidence_requires_complete_generation_and_refusal(tmp_path):
                 "retrieval": {"hybrid_rerank": {"overall": {"recall": 0.9, "mrr": 0.6}}},
                 "refusal": {"answerable": {}, "absent": {}}, "generation": None})
     stages = rr.collect(tmp_path, require_flywheel=False, expected={})
-    assert stages["rag"]["status"] == "passed"
+    assert stages["rag"]["status"] == "not_run"
     ev = {e["capability"]: e["status"] for e in rr.project_evidence(stages)}
-    assert ev["BGE-M3 + BM25 + RRF + BGE-Reranker"] == "supported"
+    assert ev["BGE-M3 + BM25 + RRF + BGE-Reranker"] == "partially_supported"
     assert ev["四信号置信度与拒答治理"] == "partially_supported"
+
+
+def test_rag_provider_failure_cannot_publish_partial_scores(tmp_path):
+    _write(tmp_path, "rag_eval.json",
+           {"meta": {"dataset_role": "blind_test", "dataset_sha256": "a" * 64,
+                     "generation_status": "provider_error",
+                     "provider_failures": [{"label": "cov:hybrid_rerank:Q1",
+                                            "status_code": 499}]},
+            "retrieval": {"hybrid_rerank": {"overall": {"recall": 0.9, "mrr": 0.6}}},
+            "refusal": {"answerable": {}, "absent": {}}, "generation": None})
+    rag = rr.collect(tmp_path, require_flywheel=False, expected={})["rag"]
+    assert rag["status"] == "provider_error"
+    assert rag["metrics"]["complete"] is False
+    assert "499" in rag["error"]
+
+
+def test_rag_legacy_skipped_generation_cannot_pass(tmp_path):
+    _write(tmp_path, "rag_eval.json",
+           {"meta": {"dataset_role": "blind_test", "dataset_sha256": "a" * 64},
+            "retrieval": {"hybrid_rerank": {"overall": {"recall": 0.9, "mrr": 0.6}}},
+            "refusal": {"answerable": {}, "absent": {}},
+            "generation": {"skipped": 2, "answer_coverage": {}}})
+    assert rr.collect(tmp_path, require_flywheel=False, expected={})["rag"]["status"] == "invalid_report"
+
+
+def test_rag_complete_generation_can_pass(tmp_path):
+    strategies = ("vector", "bm25", "hybrid", "hybrid_rerank")
+    buckets = ("A_policy", "B_model", "C_colloquial", "E_multi")
+    _write(tmp_path, "rag_eval.json",
+           {"meta": {"dataset_role": "blind_test", "dataset_sha256": "a" * 64,
+                     "generation_status": "completed", "n_samples": 2},
+            "retrieval": {s: {"overall": {"recall": 0.9, "mrr": 0.6}} for s in strategies},
+            "refusal": {"answerable": {"total": 1}, "absent": {"total": 1}},
+            "generation": {"skipped": 0,
+                           "answer_coverage": {s: {b: 0.8 for b in (*buckets, "overall")}
+                                               for s in strategies},
+                           "faithfulness": {b: {"v": 0.9, "answered": 1} for b in buckets},
+                           "refusal": {"total": 1, "correct": 1, "rate": 1.0,
+                                       "skipped_ids": []}}})
+    rag = rr.collect(tmp_path, require_flywheel=False, expected={})["rag"]
+    assert rag["status"] == "passed" and rag["metrics"]["complete"] is True
+
+
+def test_rag_missing_refusal_denominator_cannot_pass(tmp_path):
+    _write(tmp_path, "rag_eval.json",
+           {"meta": {"dataset_role": "blind_test", "dataset_sha256": "a" * 64},
+            "retrieval": {"hybrid_rerank": {"overall": {"recall": 0.9, "mrr": 0.6}}},
+            "refusal": {"answerable": {}, "absent": {}},
+            "generation": {"skipped": 0, "answer_coverage": {"hybrid_rerank": {"overall": 0.8}},
+                           "faithfulness": {"overall": 0.9}, "refusal": {"total": 0}}})
+    assert rr.collect(tmp_path, require_flywheel=False, expected={})["rag"]["status"] == "invalid_report"
+
+
+def test_rag_missing_strategy_score_cannot_pass_even_if_skipped_zero(tmp_path):
+    _write(tmp_path, "rag_eval.json",
+           {"meta": {"dataset_role": "blind_test", "dataset_sha256": "a" * 64,
+                     "n_samples": 2},
+            "retrieval": {"hybrid_rerank": {"overall": {"recall": 0.9, "mrr": 0.6}}},
+            "refusal": {"answerable": {"total": 1}, "absent": {"total": 1}},
+            "generation": {"skipped": 0, "answer_coverage": {"hybrid_rerank": {"overall": None}},
+                           "faithfulness": {"A_policy": {"v": 0.9, "answered": 1}},
+                           "refusal": {"total": 1, "correct": 1, "rate": 1.0,
+                                       "skipped_ids": []}}})
+    assert rr.collect(tmp_path, require_flywheel=False, expected={})["rag"]["status"] == "invalid_report"
 
 
 def test_rag_report_error_marks_service_unavailable(tmp_path):

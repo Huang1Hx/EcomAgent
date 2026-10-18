@@ -16,6 +16,9 @@ async def query_faq(keyword: str, category: str | None = None) -> dict:
     """查询常见问题/政策知识库(混合检索+重排)。用于政策、规则、时效、费用、商品手册等通用问题。
     返回带编号证据供作答引用;证据不足时返回 sufficient=False,请据此向用户拒答。"""
     u = await query_understanding.understand(keyword)
+    provider_diag = ({"provider_error": u["provider_error"],
+                      "provider_status_code": u.get("provider_status_code")}
+                     if u.get("provider_error") else {})
     query = u["standard"]
     # 同义词扩展只拼进 BM25 检索文本(检索侧),不改 dense query、不改标准问法语义(ch04 spec §2)
     bm25_text = query + (" " + " ".join(u["expanded"]) if u["expanded"] else "")
@@ -33,14 +36,17 @@ async def query_faq(keyword: str, category: str | None = None) -> dict:
     top = hits[0]["rerank_score"] if hits else 0.0
     if not hits or top < settings.rerank_min_score:
         return {"sufficient": False, "source": "retrieval_low_conf",
-                "reason": f"检索证据不足(top={top:.3f})", "citations": []}
+                "reason": f"检索证据不足(top={top:.3f})", "citations": [], **provider_diag}
 
     # 语义闸:生成前自评证据够不够
     ev_texts = [f"{h['question']} {h['answer']}" for h in hits]
     chk = await selfcheck.check_sufficient(query, ev_texts)
+    if chk.get("provider_error"):
+        provider_diag = {"provider_error": chk["provider_error"],
+                         "provider_status_code": chk.get("provider_status_code")}
     if not chk["useful"]:
         return {"sufficient": False, "source": "self_check",
-                "reason": chk["reason"], "citations": []}
+                "reason": chk["reason"], "citations": [], **provider_diag}
 
     # 首尾组装 + 编号
     arranged = retrieval.arrange_head_tail(hits)
@@ -50,7 +56,8 @@ async def query_faq(keyword: str, category: str | None = None) -> dict:
         for i, h in enumerate(arranged)
     ]
     evidence = "\n".join(f"[{c['n']}] {c['question']}: {c['answer']}" for c in citations)
-    return {"sufficient": True, "evidence": evidence, "citations": citations}
+    return {"sufficient": True, "evidence": evidence, "citations": citations,
+            **provider_diag}
 
 
 # query_faq 走 RAG 管线(改写+混合检索+重排+自评,多次上游往返):远慢于默认 5s 给 30s;

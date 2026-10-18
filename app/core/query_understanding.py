@@ -25,9 +25,13 @@ async def understand(query: str) -> dict:
     model = llm.structured(_Rewrite)
     try:
         r: _Rewrite = await (QUERY_REWRITE_PROMPT | model).ainvoke({"query": query})
-    except Exception:
+    except Exception as exc:
         logger.warning("query 改写失败,回落原问题 query=%r", query, exc_info=True)
-        return {"standard": query, "expanded": []}
+        code = getattr(exc, "status_code", None)
+        if code is None:
+            code = getattr(getattr(exc, "response", None), "status_code", None)
+        return {"standard": query, "expanded": [], "provider_error": "query_rewrite",
+                "provider_status_code": code}
     return {"standard": r.standard or query, "expanded": list(r.expanded or [])}
 
 

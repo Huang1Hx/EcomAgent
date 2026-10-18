@@ -72,15 +72,228 @@ def test_milvus_search_defaults_resolve_collection_at_call_time():
 
 
 def test_eval_ch04_concurrency_is_configurable(monkeypatch):
-    """学校上游限流:检索/生成并发必须可压到 1,默认仍保持原有水平。"""
+    """学校上游与 CLI 共用额度:默认单路,配置必须控制真实信号量。"""
     from scripts import eval_ch04
 
     monkeypatch.delenv("RAG_RETR_CONCURRENCY", raising=False)
     monkeypatch.delenv("RAG_GEN_CONCURRENCY", raising=False)
-    assert eval_ch04.eval_concurrency() == (5, 5)
-    monkeypatch.setenv("RAG_RETR_CONCURRENCY", "1")
-    monkeypatch.setenv("RAG_GEN_CONCURRENCY", "1")
     assert eval_ch04.eval_concurrency() == (1, 1)
+    monkeypatch.setenv("RAG_RETR_CONCURRENCY", "1")
+    monkeypatch.setenv("RAG_GEN_CONCURRENCY", "2")
+    assert eval_ch04.configure_concurrency() == (1, 2)
+    assert eval_ch04._retr_sem._value == 1
+    assert eval_ch04._gen_sem._value == 2
+
+
+def test_eval_ch04_invalid_limits_fail_before_running(monkeypatch):
+    from scripts import eval_ch04
+
+    monkeypatch.setenv("RAG_RETR_CONCURRENCY", "0")
+    with pytest.raises(ValueError):
+        eval_ch04.configure_concurrency()
+    monkeypatch.setenv("RAG_RETR_CONCURRENCY", "1")
+    monkeypatch.setenv("RAG_GEN_CONCURRENCY", "many")
+    with pytest.raises(ValueError):
+        eval_ch04.configure_concurrency()
+    monkeypatch.setenv("RAG_GEN_CONCURRENCY", "1")
+    monkeypatch.setenv("RAG_CALL_TIMEOUT", "0")
+    with pytest.raises(ValueError):
+        eval_ch04.eval_call_timeout()
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_generation_uses_configured_limit(monkeypatch):
+    """实际 D 桶任务必须受配置控制,不能只把环境变量写进日志。"""
+    import asyncio
+    from scripts import eval_ch04
+
+    monkeypatch.setenv("RAG_GEN_CONCURRENCY", "1")
+    eval_ch04.configure_concurrency()
+    active = peak = 0
+
+    async def fake_try(factory, label):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return {"sufficient": False}
+
+    monkeypatch.setattr(eval_ch04, "_try", fake_try)
+    await asyncio.gather(*(eval_ch04._refusal_one({"id": str(i), "query": "q"})
+                           for i in range(3)))
+    assert peak == 1
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_retrieval_uses_configured_limit(monkeypatch):
+    import asyncio
+    from scripts import eval_ch04
+
+    monkeypatch.setenv("RAG_RETR_CONCURRENCY", "1")
+    eval_ch04.configure_concurrency()
+    active = peak = 0
+
+    async def fake_search(*args, **kwargs):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return []
+
+    monkeypatch.setattr(eval_ch04.retrieval, "search_knowledge", fake_search)
+    await asyncio.gather(*(eval_ch04._retrieve("vector", {"query": str(i)})
+                           for i in range(3)))
+    assert peak == 1
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_provider_failure_keeps_status_and_aborts(monkeypatch):
+    from scripts import eval_ch04
+
+    class Upstream499(Exception):
+        status_code = 499
+
+    calls = 0
+
+    async def fail():
+        nonlocal calls
+        calls += 1
+        raise Upstream499()
+
+    async def no_wait(_):
+        return None
+
+    monkeypatch.setattr(eval_ch04.asyncio, "sleep", no_wait)
+    with pytest.raises(eval_ch04.ProviderCallError) as exc:
+        await eval_ch04._try(fail, "cov:hybrid_rerank:Q1")
+    assert exc.value.status_code == 499
+    assert exc.value.label == "cov:hybrid_rerank:Q1"
+    assert calls == 1  # 499 不立即重试,避免继续占用共享额度
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_timeout_is_not_retried(monkeypatch):
+    from scripts import eval_ch04
+
+    calls = 0
+
+    async def timeout():
+        nonlocal calls
+        calls += 1
+        raise TimeoutError()
+
+    with pytest.raises(eval_ch04.ProviderCallError) as exc:
+        await eval_ch04._try(timeout, "faith:Q1")
+    assert exc.value.error_type == "TimeoutError"
+    assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_refusal_provider_fallback_is_not_correct_refusal(monkeypatch):
+    from scripts import eval_ch04
+
+    async def fake_try(factory, label):
+        return {"sufficient": False, "source": "self_check",
+                "provider_error": "self_check", "provider_status_code": 499}
+
+    monkeypatch.setattr(eval_ch04, "_try", fake_try)
+    with pytest.raises(eval_ch04.ProviderCallError) as exc:
+        await eval_ch04._refusal_one({"id": "D1", "query": "退款规则"})
+    assert exc.value.status_code == 499
+    assert exc.value.label == "refuse:D1:self_check"
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_aborts_remaining_generation_after_provider_failure():
+    import asyncio
+    from scripts import eval_ch04
+
+    cancelled = asyncio.Event()
+
+    async def fail():
+        await asyncio.sleep(0)
+        raise eval_ch04.ProviderCallError("gen:Q1", "APITimeoutError")
+
+    async def pending():
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    with pytest.raises(eval_ch04.ProviderCallError):
+        await eval_ch04.with_progress([fail(), pending()], lambda n: None)
+    assert cancelled.is_set()
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_writes_provider_failure_without_partial_generation(monkeypatch, tmp_path):
+    import json
+    from scripts import eval_ch04
+
+    sample = {"id": "Q1", "bucket": "D_absent", "query": "外部问题",
+              "should_refuse": True, "review_status": "manual_sampled"}
+
+    async def deterministic(_):
+        return ({"hybrid_rerank": {"overall": {"recall": 0.9, "mrr": 0.6}}},
+                {}, {"hybrid_rerank": {"Q1": []}})
+
+    async def failure(*_):
+        raise eval_ch04.ProviderCallError("refuse:Q1:self_check", "FailClosedModelError", 499)
+
+    async def no_chunks():
+        return 1
+
+    monkeypatch.setattr(eval_ch04, "_load", lambda: [sample])
+    monkeypatch.setattr(eval_ch04, "_deterministic", deterministic)
+    monkeypatch.setattr(eval_ch04, "_generation", failure)
+    monkeypatch.setattr(eval_ch04, "_kb_chunks", no_chunks)
+    monkeypatch.setattr(eval_ch04, "refusal_metrics", lambda *args: {
+        "threshold": 0.26, "answerable": {"wrongly_refused": 0, "total": 0},
+        "absent": {"wrongly_passed": 0, "total": 1}})
+    monkeypatch.setattr(eval_ch04, "report_dataset", lambda _: {"dataset_sha256": "x"})
+    monkeypatch.setattr(eval_ch04, "_ROOT", tmp_path)
+    monkeypatch.setattr(eval_ch04, "_OUT_DIR", tmp_path)
+    monkeypatch.setattr(eval_ch04, "_OUT_JSON", tmp_path / "rag_eval.json")
+    monkeypatch.setattr(eval_ch04, "_OUT_TXT", tmp_path / "rag_eval.txt")
+    monkeypatch.setattr(eval_ch04, "_LINES", [])
+    monkeypatch.setattr(eval_ch04, "SKIP_GEN", False)
+    assert await eval_ch04.main() == 2
+    report = json.loads((tmp_path / "rag_eval.json").read_text())
+    assert report["generation"] is None
+    assert report["meta"]["generation_status"] == "provider_error"
+    assert report["meta"]["provider_failures"][0]["status_code"] == 499
+    assert report["meta"]["concurrency"] == 1
+    assert any("检索并发 1 · 生成并发 1" in line for line in eval_ch04._LINES)
+
+
+@pytest.mark.asyncio
+async def test_eval_ch04_read_notes_does_not_burst_school_model(monkeypatch):
+    import asyncio
+    from scripts import eval_ch04
+
+    active = peak = 0
+
+    async def fake_generate(kind, payload):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return kind
+
+    monkeypatch.setattr(eval_ch04.read_notes, "generate", fake_generate)
+    monkeypatch.setattr(eval_ch04.read_notes, "generate_all",
+                        lambda *args: pytest.fail("RAG 评测不应并发生成读图小注"))
+    labels = {s: {b: {"recall": 1.0, "mrr": 1.0} for b in eval_ch04.GRADED_BUCKETS}
+              | {"overall": {"recall": 1.0, "mrr": 1.0}}
+              for s in eval_ch04.STRATEGIES}
+    coverage = {s: {b: 1.0 for b in eval_ch04.GRADED_BUCKETS + ["overall"]}
+                for s in eval_ch04.STRATEGIES}
+    notes = await eval_ch04._read_notes(labels, coverage, None)
+    assert len(notes) == 3 and peak == 1
 
 
 async def test_eval_ch04_reports_progress_each_completed_item():

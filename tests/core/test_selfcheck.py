@@ -22,3 +22,19 @@ async def test_check_sufficient_parses_flat(monkeypatch):
     monkeypatch.setattr("app.core.selfcheck._chain", lambda: Chain())
     out = await selfcheck.check_sufficient("Pro型号功能", ["满99包邮"])
     assert out == {"useful": False, "reason": "证据只讲运费,未涉及型号"}
+
+
+@pytest.mark.asyncio
+async def test_check_sufficient_provider_failure_remains_fail_closed_and_identifiable(monkeypatch):
+    class Upstream499(Exception):
+        status_code = 499
+
+    class Chain:
+        async def ainvoke(self, _):
+            raise Upstream499()
+
+    monkeypatch.setattr(selfcheck, "_chain", lambda: Chain())
+    out = await selfcheck.check_sufficient("退货条件", ["七天无理由"])
+    assert out["useful"] is False
+    assert out["provider_error"] == "self_check"
+    assert out["provider_status_code"] == 499

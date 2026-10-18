@@ -177,7 +177,7 @@ def _rag(tmp: Path, expected: dict) -> Stage:
     if data.get("error"):
         text = str(data["error"])
         status = "provider_error" if any(w in text.lower() for w in (
-            "timeout", "timed out", "429", "401", "402", "api", "balance")) else \
+            "timeout", "timed out", "429", "499", "401", "402", "api", "balance")) else \
             "service_unavailable"
         return stage(status, report=str(RAG_REPORT), error=text[:300])
     meta = data.get("meta") or {}
@@ -194,13 +194,41 @@ def _rag(tmp: Path, expected: dict) -> Stage:
     if not overall or not refusal:
         return stage("failed", report=str(RAG_REPORT), error="缺少检索/拒答段")
     n = int(meta.get("n_samples") or 0)
-    gen_note = "生成段未完成" if gen is None else ""
-    status = "passed" if overall.get("recall") is not None else "failed"
+    retrieval_complete = overall.get("recall") is not None and overall.get("mrr") is not None
+    gen_status = meta.get("generation_status")
+    failures = meta.get("provider_failures") or []
+    if not retrieval_complete:
+        status, gen_note = "failed", "检索指标不完整"
+    elif gen_status == "provider_error" or failures:
+        status = "provider_error"
+        gen_note = "生成段上游失败:" + ", ".join(
+            f"{f.get('label')} HTTP {f.get('status_code')}" for f in failures)[:220]
+    elif gen_status == "invalid_report":
+        status, gen_note = "invalid_report", "生成段执行异常"
+    elif gen is None:
+        status, gen_note = "not_run", "生成段未完成;仅检索指标可作部分证据"
+    elif not isinstance(gen, dict) or gen.get("skipped") != 0:
+        status, gen_note = "invalid_report", "生成段有跳过题或缺少完整性标记"
+    elif not gen.get("answer_coverage") or not gen.get("faithfulness") or not gen.get("refusal"):
+        status, gen_note = "invalid_report", "生成段指标不完整"
+    elif int((refusal.get("answerable") or {}).get("total") or 0) <= 0 or \
+            int((refusal.get("absent") or {}).get("total") or 0) <= 0:
+        status, gen_note = "invalid_report", "可答/库外拒答分母缺失"
+    elif n != (int((refusal.get("answerable") or {}).get("total") or 0)
+               + int((refusal.get("absent") or {}).get("total") or 0)):
+        status, gen_note = "invalid_report", "拒答分母与评测总题数不一致"
+    elif int((gen.get("refusal") or {}).get("total") or 0) != int((refusal.get("absent") or {}).get("total") or 0):
+        status, gen_note = "invalid_report", "D 桶拒答评测分母不完整"
+    elif not _rag_scores_complete(gen):
+        status, gen_note = "invalid_report", "生成段策略/分桶分数不完整"
+    else:
+        status, gen_note = "passed", ""
     return stage(status, report=str(RAG_REPORT),
                  metrics={"recall_at_5": overall.get("recall"),
                           "mrr": overall.get("mrr"), "n_samples": n,
                           "refusal": refusal or None,
-                          "complete": bool(refusal) and gen is not None,
+                          "retrieval_complete": retrieval_complete,
+                          "complete": status == "passed",
                           "generation_skipped": (gen or {}).get("skipped")
                           if isinstance(gen, dict) else None,
                           "false_pass": ratio(int(refusal.get("absent", {}).get("wrongly_passed") or 0),
@@ -209,6 +237,21 @@ def _rag(tmp: Path, expected: dict) -> Stage:
                                                 int(refusal.get("answerable", {}).get("total") or 0))},
                  error=gen_note,
                  note=f"dataset={meta.get('dataset')};threshold={meta.get('confidence_threshold')}")
+
+
+def _rag_scores_complete(gen: dict) -> bool:
+    """完整发布报告需要四策略各桶分数和 D 桶逐题拒答,不能只看 skipped=0。"""
+    buckets = ("A_policy", "B_model", "C_colloquial", "E_multi")
+    for strat in ("vector", "bm25", "hybrid", "hybrid_rerank"):
+        scores = (gen.get("answer_coverage") or {}).get(strat) or {}
+        if any(scores.get(bucket) is None for bucket in (*buckets, "overall")):
+            return False
+    for bucket in buckets:
+        score = (gen.get("faithfulness") or {}).get(bucket) or {}
+        if score.get("v") is None or int(score.get("answered") or 0) <= 0:
+            return False
+    refusal = gen.get("refusal") or {}
+    return refusal.get("rate") is not None and not refusal.get("skipped_ids")
 
 
 def _flywheel(tmp: Path, expected: dict | None = None) -> Stage:
@@ -360,11 +403,11 @@ def project_evidence(stages: dict[str, Stage]) -> list[dict]:
     contract_ok = st("contract") == "passed"
     return [
         evidence("BGE-M3 + BM25 + RRF + BGE-Reranker", rag["status"] == "passed",
-                 rag["status"] not in ("not_run", "blocked"),
-                 rag["report"], "四策略检索与盲测 Recall@5/MRR/答案覆盖"),
+                 rag["metrics"].get("retrieval_complete") is True,
+                 rag["report"], "四策略盲测检索 Recall@5/MRR;端到端答案覆盖仅在生成段完整时有效"),
         evidence("四信号置信度与拒答治理", rag["status"] == "passed"
                  and rag["metrics"].get("complete") is True,
-                 rag["status"] not in ("not_run", "blocked"), rag["report"],
+                 rag["metrics"].get("retrieval_complete") is True, rag["report"],
                  "固定阈值下误放/误拦;阈值来自独立校准集"),
         evidence("九类意图到五出口 Workflow + Agent",
                  intent["status"] == "passed" and agent["status"] == "passed",
@@ -391,7 +434,7 @@ def _run(cmd: list[str], item: Stage, env: dict | None = None) -> Stage:
     item["note"] = (item["note"] + " | " if item["note"] else "") + " ".join(tail)[:500]
     if proc.returncode != 0:
         text = (proc.stdout + proc.stderr).lower()
-        if any(w in text for w in ("timeout", "connection", "429", "401", "upstream",
+        if any(w in text for w in ("timeout", "connection", "429", "499", "402", "401", "upstream",
                                    "connecterror", "readtimeout")):
             item["status"] = "provider_error"
         else:

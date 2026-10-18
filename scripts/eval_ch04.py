@@ -10,7 +10,8 @@
      - 四策略各自生成答案 → LLM 判「答案覆盖度」(端到端证明:检索越好→答案越全);
      - hybrid_rerank 额外算 Faithfulness(答案不编造);
      - D 桶经线上管线看拒答率。
-生成段带每调用超时 + 失败跳过 + 低并发,单点故障不拖垮整轮;检索段/证据覆盖度不依赖 glm、可复现。
+生成段默认单路;上游失败重试一次后立即中止生成段,保留确定性检索指标,
+但不把失败题当成业务错题或生成段通过。
 
 加 --skip-gen 只跑前两段(确定性、不碰裁判模型):裁判上游挂了或只想快速看检索侧时用,
 产物照落,页面按「生成段未完成」显示。入口 make eval-rag SKIP_GEN=1。
@@ -53,16 +54,13 @@ SKIP_GEN = "--skip-gen" in sys.argv   # 只跑确定性两段(裁判上游不可
 K = 10                 # 检索深度:喂给生成段与证据覆盖度的条数,跟线上 rerank_top_k 对齐
 RECALL_K = 5           # 召回率的截断位:一道题需要的证据要在前五条里凑齐。跨文档题一问要
                        # 两三块不同小节的知识,@1 只看第一条根本评不到它们,@5 才评得动
-RETR_CONCURRENCY = 5   # 检索:子句拆分后一题要打好几次嵌入+重排,并发压低点少撞限流
-GEN_CONCURRENCY = 5    # 生成并发。这一段是整轮的时间大头:300 题四策略约 2200 次裁判调用,
-                       # 单次 4~6 秒。压在 5 是给上游留余量(共用 key 的限流是全局的,
-                       # 一轮评估把配额吃满,同时在用的其他调用就开始 429)
-CALL_TIMEOUT = 45.0    # 单次 glm 调用超时(秒),防卡死
+RETR_CONCURRENCY = 1   # 默认单路,检索也会调用远端嵌入和重排
+GEN_CONCURRENCY = 1    # 学校模型与 CLI/项目共享额度;这里只限制本评测进程
+CALL_TIMEOUT = 120.0   # 45s 曾截断较慢裁判调用;仍给每次调用有限超时
 
 
 def eval_concurrency(retr: int = RETR_CONCURRENCY, gen: int = GEN_CONCURRENCY) -> tuple[int, int]:
     """检索/生成并发;上游限流时用 RAG_RETR_CONCURRENCY / RAG_GEN_CONCURRENCY 压低。"""
-    import os
     rt = int(os.environ.get("RAG_RETR_CONCURRENCY", retr))
     gn = int(os.environ.get("RAG_GEN_CONCURRENCY", gen))
     if rt < 1 or gn < 1:
@@ -70,9 +68,39 @@ def eval_concurrency(retr: int = RETR_CONCURRENCY, gen: int = GEN_CONCURRENCY) -
     return rt, gn
 
 
+def configure_concurrency() -> tuple[int, int]:
+    """在每轮任务创建前重建真正用于请求的信号量。"""
+    global _retr_sem, _gen_sem
+    rt, gn = eval_concurrency()
+    _retr_sem = asyncio.Semaphore(rt)
+    _gen_sem = asyncio.Semaphore(gn)
+    return rt, gn
+
+
+def eval_call_timeout() -> float:
+    value = float(os.environ.get("RAG_CALL_TIMEOUT", CALL_TIMEOUT))
+    if value <= 0:
+        raise ValueError("RAG_CALL_TIMEOUT 必须 > 0")
+    return value
+
+
 _retr_sem = asyncio.Semaphore(RETR_CONCURRENCY)
 _gen_sem = asyncio.Semaphore(GEN_CONCURRENCY)
-_errs: list[str] = []
+
+
+class ProviderCallError(RuntimeError):
+    """仅保留阶段、异常类别和状态码,不将上游响应或凭据写入报告。"""
+
+    def __init__(self, label: str, error_type: str, status_code=None):
+        self.label = label
+        self.error_type = error_type
+        self.status_code = status_code
+        suffix = f" HTTP {status_code}" if status_code is not None else ""
+        super().__init__(f"{label}: {error_type}{suffix}")
+
+    def as_dict(self) -> dict:
+        return {"label": self.label, "error_type": self.error_type,
+                "status_code": self.status_code}
 
 
 class _Faith(BaseModel):
@@ -224,20 +252,21 @@ def _format_evidence(hits) -> str:
 
 
 async def _try(factory, label):
-    """带超时地跑一个 glm 协程;失败退避一次再试,仍失败返回 None 并记账(不拖垮整轮)。
+    """带超时地跑模型协程;限流/超时立即停,其他异常最多重试一次。
 
     factory 是「造协程的函数」而不是协程本身:协程只能 await 一次,要重试就得重新造一个。
-    偶发 429 / 超时直接记成 None 的话,一个桶可能一条样本都不剩,分数就成了 0.00——
-    那是「没评上」不是「真的零分」,所以先退一步重试。"""
+    中止可避免 499/429/超时被计成拒答成功或从指标分母中静默消失。"""
     for i in range(2):
         try:
-            return await asyncio.wait_for(factory(), CALL_TIMEOUT)
+            return await asyncio.wait_for(factory(), eval_call_timeout())
         except Exception as e:
-            if i == 0:
+            code = getattr(e, "status_code", None)
+            if code is None:
+                code = getattr(getattr(e, "response", None), "status_code", None)
+            if i == 0 and code not in (401, 402, 429, 499) and not isinstance(e, TimeoutError):
                 await asyncio.sleep(2.0)
                 continue
-            _errs.append(f"{label}: {type(e).__name__}")
-    return None
+            raise ProviderCallError(label, type(e).__name__, code) from e
 
 
 async def with_progress(coros, on_done):
@@ -249,10 +278,18 @@ async def with_progress(coros, on_done):
         out[i] = await coro
         return i
 
-    for fut in asyncio.as_completed([_wait(i, c) for i, c in enumerate(coros)]):
-        await fut
-        done += 1
-        on_done(done)
+    tasks = [asyncio.create_task(_wait(i, c)) for i, c in enumerate(coros)]
+    try:
+        for fut in asyncio.as_completed(tasks):
+            await fut
+            done += 1
+            on_done(done)
+    except BaseException:
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
     return out
 
 
@@ -319,10 +356,9 @@ async def _gen_one(strat, s, HITS, model, cov_judge, faith_judge,
             lambda: (RAG_ANSWER_PROMPT | model).ainvoke(
                 {"query": s["query"], "evidence": evidence}),
             f"gen:{strat}:{s['id']}")
-        if ans is None:
-            return {"strat": strat, "bucket": s["bucket"], "coverage": None,
-                    "faithful": None, "guard_hits": []}
         text = ans.content if isinstance(ans.content, str) else str(ans.content)
+        if not text.strip():
+            raise ProviderCallError(f"gen:{strat}:{s['id']}", "EmptyModelResponse")
         # 型号机械闸:答案里的型号必须逐字来自本轮证据。命中就带着「哪几个没依据」重写一次,
         # 重写还不干净就把它记下来(报告里能看见闸开了几次、拦没拦住),不静悄悄放过去。
         guard_hits = []
@@ -334,11 +370,12 @@ async def _gen_one(strat, s, HITS, model, cov_judge, faith_judge,
                     {"query": s["query"],
                      "evidence": evidence + "\n\n" + model_guard.repair_hint(bad)}),
                 f"guard-retry:{strat}:{s['id']}")
-            if retry is not None:
-                fixed_text = retry.content if isinstance(retry.content, str) else str(retry.content)
-                if not model_guard.unsupported_models(fixed_text, evidence):
-                    text = fixed_text
-                    guard_hits[-1]["fixed"] = True
+            fixed_text = retry.content if isinstance(retry.content, str) else str(retry.content)
+            if not fixed_text.strip():
+                raise ProviderCallError(f"guard-retry:{strat}:{s['id']}", "EmptyModelResponse")
+            if not model_guard.unsupported_models(fixed_text, evidence):
+                text = fixed_text
+                guard_hits[-1]["fixed"] = True
         cov = await _try(
             lambda: (cov_prompt | cov_judge).ainvoke(
                 {"query": s["query"], "n": len(s["expect_points"]),
@@ -346,7 +383,7 @@ async def _gen_one(strat, s, HITS, model, cov_judge, faith_judge,
                  "answer": text}),
             f"cov:{strat}:{s['id']}")
         coverage = None
-        if cov is not None and s["expect_points"]:
+        if s["expect_points"]:
             coverage = min(cov.covered_count, len(s["expect_points"])) / len(s["expect_points"])
         faithful = None
         faith_detail = None
@@ -355,20 +392,17 @@ async def _gen_one(strat, s, HITS, model, cov_judge, faith_judge,
                 lambda: (faith_prompt | faith_judge).ainvoke(
                     {"evidence": evidence, "answer": text}),
                 f"faith:{s['id']}")
-            if fa is not None:
-                faithful = bool(fa.faithful)
-                if not faithful:  # 不忠实个案:留证据供报告展示(问题/答案/裁判理由/角标原文)
-                    # citations 存这一轮喂给模型的 Top-K 证据全集,顺序与 evidence 拼接一致——
-                    # 答案里的 [n] 就是这份列表的序号(答案通常只引其中两三条)。裁判说「证据里没有」,
-                    # 追溯时得能看到手里到底有哪几块、又只用了哪几块
-                    faith_detail = {"id": s["id"], "bucket": s["bucket"],
-                                    "query": s["query"], "answer": text, "reason": fa.reason,
-                                    "citations": [
-                                        {"n": i + 1, "chunk_id": h.get("id"),
-                                         "section_path": h.get("section_path", ""),
-                                         "question": h.get("question", ""),
-                                         "answer": h.get("answer", "")}
-                                        for i, h in enumerate(hits)]}
+            faithful = bool(fa.faithful)
+            if not faithful:  # 不忠实个案:留证据供报告展示(问题/答案/裁判理由/角标原文)
+                # 裁判说证据里没有时,保留本轮完整证据,供人工复核。
+                faith_detail = {"id": s["id"], "bucket": s["bucket"],
+                                "query": s["query"], "answer": text, "reason": fa.reason,
+                                "citations": [
+                                    {"n": i + 1, "chunk_id": h.get("id"),
+                                     "section_path": h.get("section_path", ""),
+                                     "question": h.get("question", ""),
+                                     "answer": h.get("answer", "")}
+                                    for i, h in enumerate(hits)]}
     return {"strat": strat, "bucket": s["bucket"], "coverage": coverage,
             "faithful": faithful, "faith_detail": faith_detail,
             "guard_hits": guard_hits}
@@ -408,8 +442,9 @@ async def _refusal_one(s):
     async with _gen_sem:
         out = await _try(lambda: faq.query_faq.ainvoke({"keyword": s["query"]}),
                          f"refuse:{s['id']}")
-    if out is None:
-        return None
+    if out.get("provider_error"):
+        raise ProviderCallError(f"refuse:{s['id']}:{out['provider_error']}",
+                                "FailClosedModelError", out.get("provider_status_code"))
     refused = not out.get("sufficient")
     detail = None
     if not refused:
@@ -453,12 +488,6 @@ async def _generation(samples, HITS):
     # 没评上的那几条也点名:57/60 里缺的是哪三题,读者不该靠猜
     refusal_skipped = [s["id"] for s, r in zip(absent, raw_refusals)
                        if not (isinstance(r, dict) and "refused" in r)]
-
-    # 上游整段挂掉(余额耗尽、鉴权失效)时一条都判不出来。这时按「生成段未完成」处理,
-    # 不能把一片 0.00 落进产物和页面——那会被读成「覆盖度真的是零」。
-    if not refusals and not any(r["coverage"] is not None or r["faithful"] is not None
-                                for r in gen_results):
-        raise RuntimeError(f"生成段 {len(_errs)} 次调用全部失败(上游不可用),不落零分")
 
     # 四策略 × 分桶 答案覆盖度
     answer_cov = {}
@@ -527,7 +556,7 @@ async def _generation(samples, HITS):
             "refusal": {"rate": (round(rate, 3) if rate is not None else None),
                         "total": len(refusals), "correct": correct,
                         "cases": miss_cases, "skipped_ids": refusal_skipped},
-            "skipped": len(_errs)}
+            "skipped": 0}
 
 
 # ---------- 产物 ----------
@@ -559,7 +588,12 @@ async def _read_notes(retrieval_data, coverage_data, generation_data):
     }
     if generation_data:
         jobs["rag_answer_coverage"] = _labeled(generation_data["answer_coverage"])
-    notes = await read_notes.generate_all(jobs)
+    # generate_all 会一次并发发出所有读图小注,绕过生成段的单路限制。
+    notes = {}
+    for kind, payload in jobs.items():
+        note = await read_notes.generate(kind, payload)
+        if note:
+            notes[kind] = note
     _log(f"\n读图小注:生成 {len(notes)}/{len(jobs)} 条"
          + ("" if len(notes) == len(jobs) else "(缺的那几张页面用兜底句)"))
     return notes
@@ -579,6 +613,8 @@ def _write_report(retrieval_data, coverage_data, generation_data, meta, notes=No
 
 async def main():
     samples = _load()
+    retr_concurrency, gen_concurrency = configure_concurrency()
+    timeout = eval_call_timeout()
     global _CONF_THRESHOLD
     _CONF_THRESHOLD = env_threshold()
     import collections as _c
@@ -589,30 +625,38 @@ async def main():
         f"{BUCKET_LABEL.get(b, b)} {n}" for b, n in per.most_common()) + f"),策略 {STRATEGIES}")
     if role == "development_only":
         _log("口径:旧 300 题已参与调优,本报告只作开发回归,不得表述为独立测试结果。")
-    _log(f"检索并发 {RETR_CONCURRENCY} · 生成并发 {GEN_CONCURRENCY} · 单调用超时 {CALL_TIMEOUT:.0f}s\n")
+    _log(f"检索并发 {retr_concurrency} · 生成并发 {gen_concurrency} · 单调用超时 {timeout:.0f}s\n")
     retrieval_data, coverage_data, HITS = await _deterministic(samples)
     refusal = refusal_metrics(samples, HITS["hybrid_rerank"])
     generation_data = None
+    provider_failures = []
+    generation_status = "not_run" if SKIP_GEN else "completed"
     if SKIP_GEN:
         _log("\n[生成段跳过] --skip-gen:本轮只跑确定性两段,页面按「生成段未完成」显示。")
     else:
         try:
             generation_data = await _generation(samples, HITS)
+        except ProviderCallError as e:
+            generation_status = "provider_error"
+            provider_failures.append(e.as_dict())
+            _log(f"\n[生成段中止/上游失败] {e}")
+            _log("检索段保留;本轮生成和拒答指标不发布,恢复上游后需整段重跑。")
         except Exception as e:
+            generation_status = "invalid_report"
             _log(f"\n[生成段未完成] {type(e).__name__}: {str(e)[:140]}")
-            _log("检索段与证据覆盖度已完成;页面将标注生成段未完成,上游恢复后重跑补全。")
-    if _errs:
-        _log(f"\n注:生成段有 {len(_errs)} 次 glm 调用超时/失败被跳过(上游不稳),已按可用样本计。")
+            _log("检索段保留;本轮生成和拒答指标不发布。")
     meta = {**report_dataset(eval_path), "dataset_role": role,
             "review_status": sorted({s.get("review_status", "unknown") for s in samples}),
             "n_samples": len(samples), "kb_chunks": await _kb_chunks(),
             "recall_k": RECALL_K, "retrieve_k": K,
-            "concurrency": GEN_CONCURRENCY, "chat_model": settings.chat_model,
+            "retrieval_concurrency": retr_concurrency, "concurrency": gen_concurrency,
+            "call_timeout_seconds": timeout, "chat_model": settings.chat_model,
+            "generation_status": generation_status, "provider_failures": provider_failures,
             "confidence_threshold": _CONF_THRESHOLD,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
     # 读图小注也要过裁判模型,--skip-gen 时一并跳过,页面回落自己那句兜底话
-    notes = {} if SKIP_GEN else await _read_notes(retrieval_data, coverage_data,
-                                                  generation_data)
+    notes = {} if generation_data is None else await _read_notes(retrieval_data, coverage_data,
+                                                                generation_data)
     _write_report(retrieval_data, coverage_data, generation_data, meta, notes, refusal)
     _log(f"\n已生成:{_OUT_JSON.relative_to(_ROOT)} · {_OUT_TXT.relative_to(_ROOT)}")
     _log(f"固定阈值拒答(hybrid_rerank,t={refusal['threshold']}):可答误拦 "
@@ -620,6 +664,7 @@ async def main():
          f"库外误放 {refusal['absent']['wrongly_passed']}/{refusal['absent']['total']}")
     _log("页面:http://localhost:8000/rag-eval(后台 → RAG 评估)")
     _log("完成。" if generation_data is not None else "完成(仅检索段+证据覆盖度;生成段待上游恢复重跑)。")
+    return 2 if generation_status in ("provider_error", "invalid_report") else 0
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ make eval-release ARGS="--aggregate-only --skip-flywheel"   # 只聚合现有报
 |---|---|---|
 | 数据合同 | `tests/test_eval_dataset_contracts.py` 全部通过 | ID、字段、split、去重、支持数与 manifest 哈希 |
 | 单元测试 | 全量 `pytest` 通过 | 2 条分类器 live 测试默认跳过，不算通过 |
-| RAG 盲测 | 报告为盲测口径且检索段完整 | 生成/拒答缺失时只算检索证据，拒答治理只标 partially |
+| RAG 盲测 | 盲测数据匹配、检索与生成/拒答完整、无上游失败或跳过题 | 仅检索完整时阶段为 `not_run` 或 `provider_error`，检索能力只标 partially；499/429/超时不计成答错或正确拒答 |
 | 在线意图 | 全部标注题判对且无上游错误 | 输出混淆矩阵与每类 P/R/F1 |
 | Agent 多轮 | 全部题通过、无上游错误 | 校验工具、顺序、动作、结果与订单归属 |
 | 飞轮闭环 | 隔离报告、数据 SHA 一致、写回链路非零 | 写回断言失败即整段失败 |

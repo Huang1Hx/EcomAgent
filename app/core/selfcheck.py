@@ -28,7 +28,11 @@ async def check_sufficient(query: str, evidence_texts: list[str]) -> dict:
     evidence = "\n".join(f"[{i+1}] {t}" for i, t in enumerate(evidence_texts)) or "(无证据)"
     try:
         r: _Check = await _chain().ainvoke({"query": query, "evidence": evidence})
-    except Exception:
+    except Exception as exc:
         logger.warning("证据自评失败,按证据不足处理 query=%r", query, exc_info=True)
-        return {"useful": False, "reason": "证据自评失败"}
+        code = getattr(exc, "status_code", None)
+        if code is None:
+            code = getattr(getattr(exc, "response", None), "status_code", None)
+        return {"useful": False, "reason": "证据自评失败", "provider_error": "self_check",
+                "provider_status_code": code}
     return {"useful": bool(r.useful), "reason": r.reason or ""}
