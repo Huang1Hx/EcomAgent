@@ -10,17 +10,21 @@
 
 **Spec:** 本文件的“需求基线”和“设计决策”即本轮获准的自包含规格；用户要求本轮不另写规格文件。
 
-## 当前状态与执行批次：Task 0–5A 与评测门控已完成，Task 6 仍受上游限流阻塞（2026-10-18）
+## 当前状态与执行批次：业务修复已提交，发布验收未完成（2026-10-18 审核）
 
 用户已授权先写好计划，再在专用分支训练分类器。当前工作分支为 `feat/classifier-restoration`，起点 `0de8e19`；分类器范围的基线、Task 4 和 Task 5 已完成本地训练与隔离验收，但远程模型分发仍待做。Task 5A 已用业务库中**已有**问题联通飞轮评审与主题分布（2026-10-17 执行，见下方 Task 5A 结果）。
-Task 0–3、Task 4 Step 4 / Task 5 Step 6 的下载器与 Task 6 发布门控代码已完成；Task 6 的意图、Agent、飞轮和 RAG 生成/拒答段尚未取得完整通过结果，原因是同一上游 key 的限流（429/499）与 Chat 客户端共用，失败运行不重试、不计为通过。
+Task 0–3、Task 1/2 业务修复、Task 4 Step 4 / Task 5 Step 6 的下载器与 Task 6 发布门控代码已完成；Task 4 Step 4 / Task 5 Step 6 的**远程分发验收未完成**。Task 6 的意图、Agent、飞轮和 RAG 生成段尚未取得完整通过结果；RAG 固定阈值的确定性拒答统计已有结果，但不等于生成/拒答全链路通过。同一上游 key 曾出现 429/499；失败运行不重试、不计为通过。
 Task 8 的文档、全量单测与当前证据映射已更新；干净环境部署与远程模型下载仍**阻塞**于没有已授权的远程存储目标。
-最近提交：`b47eeee`（证据门控）、`267efb2`（Milvus 运行时集合）、`62c8d8b`（Agent 数据纠正）、`3419b85`（上下文集）、`f4ff628`（RAG 低并发/进度）、`d70b732`（飞轮隔离）、`1e51b39`（意图/Agent 评测器）、`c442cff`（发布门控）、`554bec7`（文档）、`da747fa`（聚合器可运行）。
+最近提交：`b47eeee`（证据门控）、`267efb2`（Milvus 运行时集合）、`62c8d8b`（Agent 数据纠正）、`3419b85`（上下文集）、`f4ff628`（RAG 进度/并发参数读取函数，实际接线待修）、`d70b732`（飞轮隔离）、`1e51b39`（意图/Agent 评测器）、`c442cff`（发布门控）、`554bec7`（文档）、`da747fa`（聚合器可运行）、`544cc8c`（进度记录）。
+
+**本次只读核验边界：**本地 `HEAD`、远端分支均为 `544cc8cb34a8174ba76863eb3e2afd112a4d766a`；本次未重跑全量测试或付费模型评测，`631 passed, 2 skipped` 来自已保存的发布报告。该报告生成时记录的代码 SHA 为 `554bec7`，早于当前 `HEAD`，不能当作当前提交的最终复验。除本计划外，工作区原有未提交文件仅为 `golden_report.json`、`threshold_scan.json`，其 SHA256 分别仍为 `e45edf0…877a8`、`37b8dc7…a8f1`；不暂存、不覆盖。
+
+**数据审核补充：**用户确认已对 AI 辅助评测数据做人工抽检，可如实表述为“用户已抽检”；抽检样本 ID、数量、覆盖桶/类别、判定与日期尚无可追溯台账，当前 JSONL/manifest/报告仍记录 `ai_assisted_unreviewed`、`reviewers=0`、`independent_release_evidence=false`。抽检不等于每条都经人工复核，也不自动消除模板生成、同源知识锚点与旧开发集带来的独立性限制；在记录审核范围并统一数据合同之前，不批量改写元数据或称整套题为“逐条人工审核的独立发布证据”。
 
 - 使用原有 `dataset/{train,val,test}.jsonl`（2594/161/161），保持内容和划分不变。冻结哈希、17类顺序、逐类支持数和精确重叠检查，记录血缘信息缺失；测试结果标为现有 v1 数据集回归结果。
 - 顺序固定为：现有数据核验与冻结 → 脚本统一数据目录 → 训练（仅train）与轮次/阈值选择（仅val）→ test评测 → ONNX导出及服务一致性 → 旁路联调 → 审核与提交。
 - 训练默认沿用 RoBERTa 全参微调配置：学习率 `2e-5`、训练batch 16、最多8轮、早停耐心2、种子42；记录实际设备、依赖版本、基座revision、参数、代码SHA、耗时和最优轮次。资源不足时记录原因再调整batch，不根据test分数调参。
-- 本批次完成本地模型资产清单、完整文件哈希、启动前校验及可复跑训练命令。对象存储/Release上传、下载器和新的独立测试数据作为后续交付，不阻塞本地训练和服务恢复。
+- 本批次完成本地模型资产清单、完整文件哈希、启动前校验、可复跑训练命令与下载器。远端上传、真实远程回下载和新数据审核/独立性证明仍待完成，不阻塞本机已有模型的运行。
 - 训练/评测/ONNX产物使用同一数据版本和标签顺序；模型、tokenizer、阈值任一不匹配应非零退出。服务探活应暴露产物版本；启动失败不得仅打印文字后返回成功。
 - 保护 `data/ch10/reports/golden_report.json` 和 `data/ch10/reports/threshold_scan.json`；旧评测报告先归档再生成本次报告。旁路验收使用测试数据库与已有样本的临时副本，禁止为了验证而向业务问题池灌入评测数据。
 - 当前批次验收：可复跑训练、真实模型权重、test实测结果、Torch/ONNX/HTTP一致性、服务健康、旁路幂等测试、相关测试及完整回归；历史96.4%不作为硬性训练目标。
@@ -44,7 +48,7 @@ Task 8 的文档、全量单测与当前证据映射已更新；干净环境部�
 
 ## Global Constraints
 
-- 2026-10-14已完成Git根目录迁移并把原外层数据集纳入仓库根 `dataset/`；分类器恢复代码和报告已在 `feat/classifier-restoration`，Task 1、2、3等业务改造仍未实施。
+- 2026-10-14已完成Git根目录迁移并把原外层数据集纳入仓库根 `dataset/`；分类器恢复、Task 1/2 业务修复和 Task 3 数据合同已在 `feat/classifier-restoration` 提交。剩余事项见文末“后续执行顺序”。
 - 保留用户已有未提交内容：`data/ch10/reports/golden_report.json` 和 `data/ch10/reports/threshold_scan.json`；任何任务不得覆盖或顺手提交。本地非项目记录与部署草稿由 Git 排除规则保护。
 - Task 5A 只能使用业务库已有问题，执行前重查并备份相关业务数据；不得把训练/评测样本灌入真实问题池，也不得为填满页面而伪造问答、自动通过审核或写回知识库。
 - 不降低订单归属校验，不允许通过订单号枚举他人订单；未知商品必须继续返回未找到，不能生成虚假价格或库存。
@@ -78,8 +82,8 @@ Task 8 的文档、全量单测与当前证据映射已更新；干净环境部�
    - 原脚本的数据路径错位已修复，现统一读取仓库根 `dataset/`；本机已有训练权重和经校验的ONNX包，`make classifier-up` 可启动推理服务。
    - `data/ch10/model/` 和 `data/ch10/onnx/` 继续被 `.gitignore` 排除；仅从Git克隆的新环境没有模型文件。Task 4 Step 4 / Task 5 Step 6 完成远程分发前，须手动复制完整ONNX包并校验，或在新环境重训，不能宣称一条 `make` 命令即可从空环境恢复。
 
-3. **review/topics空白不是分类器训练失败（2026-10-17只读快照）**
-   - 业务库中9条低置信度问题都未归并；review读取 `review_queue`，topics读取 `topic_classifications`，两表目前均为0。启动分类器不会触发这两段写库批处理。
+3. **review/topics空白不是分类器训练失败（Task 5A 前快照，已过时）**
+   - Task 5A 前业务库中9条低置信度问题都未归并，`review_queue=0`、`topic_classifications=0`；Task 5A 后分别为4和9（执行当时快照，后续以实时数据库为准）。启动分类器本身不会触发这两段写库批处理。
    - 先归并才能批量分类；不足默认10条门槛时需显式强跑。历史训练集和当前真实业务问题必须分开，页面条目不能由评测数据灌入。
 
 4. **商品和订单并非完全没有数据**
@@ -95,7 +99,7 @@ Task 8 的文档、全量单测与当前证据映射已更新；干净环境部�
 ## 设计决策
 
 - **评测扩充采用“旧集做开发、新集做盲测”**，而不是继续向已经调过参的300题中追加后宣称测试规模变大。
-- **分类器模型可再生、产物后续可下载**：数据和训练配置进版本控制；大模型文件不直接进普通Git。本地SHA256清单和启动校验已完成，上传与下载脚本仍是后续目标。
+- **分类器模型可再生、产物后续可下载**：数据和训练配置进版本控制；大模型文件不直接进普通Git。本地SHA256清单、启动校验和下载脚本已完成，远端上传、清单 URI 与真实回下载仍待授权和验收。
 - **商城边界采用演示适配层**：补 `list_products`、`list_orders` 和商城跳转建议，不实现真实下单。
 - **会话修复在 `log_node` 统一补齐确定性AI消息**：数据库落库成功后，只有确定性答复路径返回带 `db-<message_id>` 的 `AIMessage`；Agent路径已有AI消息，不重复追加。
 - **目录扁平化不是零影响改名**：迁移时已重建`.venv`、显式固定并迁移Docker卷、保留Git历史和用户改动；后续开发不得重新引入 `EcomAgent/python/` 路径。
@@ -124,10 +128,11 @@ Task 0 分类器范围基线 → Task 4 本地训练资产 → Task 5 训练/导
                             Task 5A 现有业务问题归并与主题分布验收（已完成，2026-10-17）
 
 Task 0 采集 Task 5A 之后的业务基线 → Task 1 会话串答修复、Task 2 商品/订单演示、
-Task 3 新评测集设计与数据合同：相互独立，可独立安排；Task 3 新增数据按本批次推进。
+Task 3 新评测集设计与数据合同（均已提交）。
 Task 4 Step 4 + Task 5 Step 6 远程模型分发：无已授权远端存储时标为阻塞，
 并阻塞 Task 8 的空环境部署验收。
-Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与文档
+Task 1 + Task 2 + Task 3 → Task 6 评测脚本/门控修复 → 服务预检 → 分阶段全链路评测
+→ Task 8 当前提交的最终回归与文档；数据抽检台账和远端分发可独立推进。
 ```
 
 ---
@@ -309,7 +314,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 
 - [x] **Step 2: 新建RAG盲测集**
   新增至少300题，保持政策、型号、口语、库外、跨文档五桶各60题；不得从旧题简单同义改写，发布前不用于调参。
-  Result: `data/eval/rag_blind_test.jsonl` 396 题，桶支持 A 60 / B 70 / C 60 / E 92 / D 114；AI 辅助模板生成、`ai_assisted_unreviewed`、`reviewers=0`，不作人工复核或独立发布证据。
+  Result: `data/eval/rag_blind_test.jsonl` 396 题，桶支持 A 60 / B 70 / C 60 / E 92 / D 114；AI 辅助模板生成，提交时元数据为 `ai_assisted_unreviewed`、`reviewers=0`。用户后续确认已抽检，范围与结果尚需台账；当前报告不能表述为全量逐条人工复核或独立发布证据。
 
 - [x] **Step 3: 扩大在线意图集**
   从18题扩为至少180题（九类每类至少20题），另加至少45条跨轮漂移和边界表达；输出混淆矩阵和每类P/R/F1。
@@ -317,7 +322,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 
 - [x] **Step 4: 扩大Agent端到端集**
   从7题扩为至少120题：九类单轮90题、商品/订单/物流工具链15题、多轮状态15题；逐题校验工具、顺序、工具结果、回答和动作。
-  Result: `data/eval/agent_test.jsonl` 153 题（single 123 / toolchain 15 / multi 15）；18 条空工具误标注已按题面纠正并更新 manifest SHA（提交 `62c8d8b`），仍为 `ai_assisted_unreviewed`。
+  Result: `data/eval/agent_test.jsonl` 153 题（single 123 / toolchain 15 / multi 15）；18 条空工具误标注已按题面纠正并更新 manifest SHA（提交 `62c8d8b`）。现有元数据仍为 `ai_assisted_unreviewed`；用户后续抽检范围待记录。
 
 - [x] **Step 5: 建立飞轮闭环集**
   至少50个知识缺口场景，验证第一次拒答、正确入池、归并去重、人工批准、MySQL/Milvus写回、第二次可答及原有题无回退。
@@ -355,12 +360,12 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 - Create: `scripts/ch10/artifacts.py`
 - Create: `data/ch10/dataset-manifest.json`、`data/ch10/artifact-manifest.json`
 - Test: `tests/test_classifier_artifacts.py`、`tests/test_classifier_live.py`
-- Deferred: `scripts/ch10/fetch_model.py` 与远程产物清单（上传目标确定后实施）。
+- Implemented: `scripts/ch10/fetch_model.py` 与本地发布清单；远端归档上传和 URI 待授权。
 
 **Interfaces:**
 - 所有脚本接受 `--data-dir`，默认解析仓库根 `dataset/`，不再隐式依赖被忽略的 `data/ch10/dataset/`。
 - `dataset-manifest.json`保存三个分割的数量、SHA256、逐类支持数、重复与交叉情况。`artifact-manifest.json`保存标签顺序、完整文件哈希和数据版本；训练参数及实际指标见 `training_report.json`。
-- 后续的 `fetch_model.py --manifest <path>` 下载后必须校验SHA256，再写入 `data/ch10/onnx/`；当前本地恢复直接重训。
+- 已有 `fetch_model.py --manifest <path>`：下载后校验SHA256再安装到 `data/ch10/onnx/`；本机可直接使用经校验的现有模型，只有空环境且无授权远端资产时才需手动复制或重训。
 
 - [x] **Step 1: 写路径与本地产物失败测试**
   覆盖数据哈希不匹配、ONNX/tokenizer/阈值哈希不匹配、服务误复用旧阈值和导出失败后保留旧包；下载中断测试随下载器后置。
@@ -372,7 +377,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
   为数据增加旁挂manifest，记录现有2594/161/161的来源缺失事实；后续新样本必须记录真实、人工编写、合成或增强来源。
 
 - [ ] **Step 4（后置）: 设计大文件分发方式（实现完成，远程存储阻塞）**
-  本批次先生成本地manifest及可复跑训练命令；对象存储/GitHub Release上传与下载器后置。普通Git中只提交manifest、代码和报告，不提交模型大文件。
+  已生成本地manifest、可复跑训练命令和下载器；对象存储/制品库上传、清单URI和真实回下载后置。普通Git中只提交manifest、代码和报告，不提交模型大文件。
   Result (2026-10-18): 下载器 `scripts/ch10/fetch_model.py` 与 `make classifier-bootstrap` 已提交于 `6af7502`；只接受清单 `artifact_uri`（https/file），校验 `archive_sha256`、逐文件 SHA256、拒绝路径穿越/多余文件，失败不替换原目录。`artifact_uri=null` 时明确非零拒绝。测试 `tests/test_fetch_model.py` 覆盖未授权拒绝、坏 zip、哈希不符与幂等复用。
   未完成：没有已授权的远程存储目标，未上传模型，未做真实远程下载；不向公开 GitHub Release 猜测地址。
 
@@ -396,7 +401,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 - Test: `tests/test_classifier_live.py`
 
 **Interfaces:**
-- 后续 `make classifier-bootstrap`：已有且哈希正确则直接使用；否则按远程manifest下载；目前可通过 `make ch10-train && make ch10-export` 本地生成。
+- 已有 `make classifier-bootstrap`：已有且哈希正确则直接使用；否则按远程manifest下载；当前远端URI为空，本机已有包可直接校验并运行，也可通过 `make ch10-train && make ch10-export` 本地再生成。
 - `make classifier-up`：启动前校验 `model.onnx`、`tokenizer.json`、`threshold.json` 和manifest。
 
 - [x] **Step 1: 冻结现有分类器v1数据**
@@ -486,19 +491,19 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 - 报告明确区分 `passed`、`failed`、`provider_error`、`service_unavailable`、`not_run`，不把缺服务算成通过。
 - `project-evidence.json`逐条对应上方七项项目能力，状态只能是 `supported`、`partially_supported`、`unsupported`，并附报告路径、分子、分母、配置和建议发布表述。
 
-- [x] **Step 1: 写聚合报告失败测试**
+- [x] **Step 1: 写聚合报告失败测试（已提交；发现 RAG 完整性门控缺口）**
   确认任何子任务未运行或报告SHA不匹配时总状态不能是通过。
-  Result: `tests/test_release_eval_report.py` 覆盖缺失=not_run、上游错误、SHA 过期、Wilson 区间、飞轮非隔离、写回失败、RAG 生成缺失、分类器字段与 main() 真实运行；14 passed。
+  Result: `tests/test_release_eval_report.py` 覆盖缺失=not_run、上游错误、SHA 过期、Wilson 区间、飞轮非隔离、写回失败、RAG 生成缺失、分类器字段与 main() 真实运行；历史记录 14 passed。但现有 `test_rag_evidence_requires_complete_generation_and_refusal` 明确允许 `generation=None` 时 `rag.status=passed`，只由 `metrics.complete=false` 和证据映射区分；若其他阶段都通过，总状态可能误判为通过。发布前必须补失败测试并修正门控（见后续步骤 N2）。
 
 - [x] **Step 2: 实现只聚合、不重算口径的发布评测器**
   每项指标保留分子/分母和95%置信区间，不只保存百分比。
   Result: `scripts/run_release_eval.py` 按固定顺序运行/聚合；58 个 429 等上游错误归 provider_error、服务错误归 service_unavailable、未运行/过期/格式不符不通过；报告 `data/eval/reports/release-eval.{json,md}` 与 `project-evidence.{json,md}`。提交 `c442cff`、`da747fa`。
 
-- [ ] **Step 3: 运行全链路评测（部分完成，模型阶段阻塞）**
+- [ ] **Step 3: 运行全链路评测（部分完成，模型阶段与门控缺口待处理）**
   所有服务启动后执行 `make eval-release`；修复失败时回到所属Task，不在聚合器里绕过。
-  Result (2026-10-18, 提交 `da747fa`): `--stages contract,unit --skip-flywheel` 真实运行通过——数据合同 passed、单元测试 passed（631 passed, 2 skipped）。只聚合结果：RAG 盲测 passed（仅检索段，396 题，hybrid_rerank Recall@5 0.881 / MRR 0.593 / 证据覆盖 0.947）、17 类分类器 passed（现有 v1 回归 161 条，micro-F1 0.9835 / macro-F1 0.9833）、上下文 fixed set passed（50/50）。
-  未通过：在线意图 not_run（模型限流，停止运行未生成报告）；Agent invalid_report（现有报告早于纠正后的数据集和门控修复，未取得新结果）；飞轮 blocked（未取得完整隔离闭环报告）；RAG 生成/拒答段未运行（上游 429/499，报告明确 generation=null、refusal 不含评分）。总状态 `invalid_report`，不宣称全链路通过。
-  执行记录：RAG 单并发曾跑到 700/1242 后被停止，日志 `/tmp/rag-blind-new.log`；飞轮隔离 `iso05` 首轮在限流前未得到完整结果，隔离库残留状态不外传、不提交。
+  Result (2026-10-18, 提交 `da747fa`): `--stages contract,unit --skip-flywheel` 真实运行通过——数据合同 passed、单元测试 passed（631 passed, 2 skipped；此为报告记载，非本次重新运行）。聚合结果：RAG 检索段 396 题 hybrid_rerank Recall@5 0.881 / MRR 0.593 / 证据覆盖 0.947；17 类分类器现有 v1 回归 161 条 micro-F1 0.9835 / macro-F1 0.9833；上下文 fixed set 50/50。RAG 的 `rag.status=passed` 只表示现有聚合器判定检索段通过，`metrics.complete=false`，**不是整段 RAG 通过**。
+  固定阈值 0.26 的确定性拒答统计为误放 0/114、误拦 166/282（58.87%），不是历史“误拦 17%”的复现；需先核查题目可答标签、检索证据与阈值校准口径，不能根据盲测直接调阈值。未通过：在线意图 not_run；Agent invalid_report（旧报告与现有数据/代码不符）；飞轮 blocked；RAG `generation=null`，生成与忠实度裁判未完成。总状态 `invalid_report`，不宣称全链路通过。
+  执行记录：尝试设置 `RAG_RETR_CONCURRENCY=1 RAG_GEN_CONCURRENCY=1` 的 RAG 运行到 700/1242 后停止，日志 `/tmp/rag-blind-new.log`；但 `scripts/eval_ch04.py` 只定义 `eval_concurrency()` 而未调用，信号量、日志和报告仍使用常量 5，**这轮实际不是单并发**。飞轮隔离 `iso05` 首轮在限流前未得到完整结果，隔离库残留状态不外传、不提交。
 
 - [ ] **Step 4: 人工复核忠实度失败案例（未运行/未复核）**
   保存逐条处置状态；只有实际复核过的样本才能表述为“人工复核”。
@@ -509,7 +514,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
   Result: `data/eval/reports/project-evidence.{json,md}` 当前为：检索 supported、上下文 supported、分类器 supported（现有 v1 回归）、可追溯性 supported；四信号拒答治理 partially_supported（仅检索段，生成/拒答未完整）；九类意图+Agent unsupported；三入口飞轮 unsupported。
 
 - [x] **Step 6: 提交发布报告（当前部分证据）**
-  Commit: `c442cff`（发布门控）、`da747fa`（真实运行修复与更新报告）。这些报告是当前真实状态的聚合，未运行/阻塞项保持未通过。
+  Commit: `c442cff`（发布门控）、`da747fa`（真实运行修复与更新报告）、`544cc8c`（进度记录）。报告如实保留未运行/阻塞项；当前报告内 `git_sha=554bec7` 早于分支 HEAD，最终发布前须在届时代码上重新运行和生成，不能把它当 `544cc8c` 的最终复验。
 
 ---
 
@@ -574,7 +579,7 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 
 **Interfaces:**
 - 新用户从根目录依次执行 `uv sync`、配置`.env`、`docker compose up -d`、建库、`make dev`即可运行主业务。
-- 分类器在完成 Task 4 Step 4 / Task 5 Step 6 的远程分发后，才能通过计划中的 `make classifier-bootstrap && make classifier-up` 从空环境恢复；当前尚无 `classifier-bootstrap` 命令，不能把本机已有ONNX包视为干净部署证明。
+- `make classifier-bootstrap` 命令和校验下载器已经存在；当前清单 `artifact_uri=null`，因此只能复用本机现有有效包，不能从空环境远程恢复。Task 4 Step 4 / Task 5 Step 6 远端分发验收后，才可用 `make classifier-bootstrap && make classifier-up` 证明克隆后无需重训。
 
 - [ ] **Step 1: 从干净环境演练部署文档（阻塞）**
   不使用已有`.venv`、模型缓存或数据库状态完成一次部署验收。
@@ -595,7 +600,20 @@ Task 1 + Task 2 + Task 3 → Task 6 全链路评测 → Task 8 最终回归与�
 
 ## 执行建议
 
-- 分类器范围的 Task 0 → Task 4 → Task 5 已完成本地训练与隔离验收；Task 5A 已完成真实业务问题的归并与主题分布联调（2026-10-17，见其结果记录）。
-- 本批次执行顺序：Task 0 新基线 → Task 1 → Task 2 → Task 3 → Task 4 Step 4 / Task 5 Step 6（远端分发，无授权目标则阻塞）→ Task 6 → Task 8。Task 1、2 共享图代码，避免并发改同一文件；Task 3 数据设计可独立推进。
-- Task 7 已先行完成；后续所有命令、文档和代码路径都以 `EcomAgent/` 为仓库根。
-- 远程模型分发需要已授权的存储目标；未确定前先完成其他独立任务，并把该项及依赖它的 Task 8 空环境验收标为阻塞，不宣称全计划完成。
+下列 N1–N7 是**后续待执行**步骤，不因本次计划更新自动视为完成。所有路径以 `EcomAgent/` 为根；Task 0–3、Task 5A、Task 7 以及分类器本机训练/部署已有提交，不再重复做或把真实业务问题重新灌库。
+
+- [x] **N1｜冻结起点、保护数据并补人工抽检台账（可独立于模型分发/评测器修复）。**在 `feat/classifier-restoration` 记录 HEAD、工作区、服务/知识库/model bundle 与数据集哈希；继续排除两份用户保留报告和 `backups/`。请用户把已抽检的样本 ID、抽检总数、每桶/每类覆盖、抽检日期、审核结论及发现的改动列成台账；能证明的条目记为“人工抽检确认”，未抽检条目保持原状态。若要升级为整套“人工审核”，需逐条审核、修正并重新计算 JSONL/manifest SHA，重跑受影响报告；若只采用抽检，报告明确抽样方法与覆盖率，不声称全量逐条审核或独立盲测。**验收：**审阅记录可追溯，数据版本和指标口径一致，旧开发集仍不冒充独立测试集。
+  Result（2026-10-19）：`data/eval/manifests/baseline.json` 只读记录 Task 5A 后基线（Git `b356b7b`、app :8000、classifier :8110、Milvus `knowledge` 52 块）；未运行会写业务库的 replay。用户保留的 `golden_report.json` SHA256 `e45edf02…877a8`、`threshold_scan.json` SHA256 `37b8dc72…8f1` 全程未改、未提交。数据合同 22 passed；全量单测 670 passed / 2 skipped（当时基线 `b356b7b`；提交 `ac55562`/`c850ab5` 后 672 passed / 2 skipped，后续新增 2 项，收集 674 项）。台账缺口仍在：只能称“用户已抽检的开发数据”，缺样本 ID/数量/覆盖/日期/结论，待用户补台账；不宣称逐条人工审核或独立盲测。提交 `c850ab5`、`b356b7b`。
+- [x] **N2｜修复 RAG 评测并发与证据完整性（不调用外部模型；与 N1、N5 独立）。**检索、生成默认均为单路；`RAG_RETR_CONCURRENCY`、`RAG_GEN_CONCURRENCY` 控制实际信号量并记录在日志/报告，`RAG_CALL_TIMEOUT` 默认 120 秒且可配置。401/402/429/499/超时不立即重试；其它异常最多重试一次，失败立即取消未完成的生成任务，记录题号/阶段、异常类型与 HTTP 状态（不记录密钥），非零退出。读图小注也改为串行。线上客服仍在改写或证据自评失败时保守兜底，但评测能识别该模型故障，不把它算作正确拒答；生成失败、跳过、缺分桶成绩或拒答分母时发布聚合不得 `passed`。Result（2026-10-19）：红灯测试复现旧默认 5/5 且参数未接线、`generation=null` 仍判通过；修复后 94 项定向/数据合同测试通过，`--aggregate-only` 将旧检索-only 报告标 `rag=not_run`、检索能力仅 `partially_supported`。代码与测试已提交 `028d4a7`，按新门控重聚合的报告已提交 `84f73e6`；未重跑完整 396 题生成。先前中断运行无法事后可靠重分类，499 根因仍需学校平台请求日志确认。两份用户保留报告未动；本计划存在此前未提交的用户改动，未整体暂存。
+- [x] **N3｜核查检索和置信度落差（依赖 N1 的审核范围，执行时不调模型）。**逐桶检查 396 题的知识锚点、可答/库外标签、命中证据与失败类型；重点核查当前 Recall@5 0.881、MRR 0.593、覆盖 0.947，以及阈值 0.26 下误放 0/114、误拦 166/282。旧简历的 98% / 89.4% / 97% / 17% 仅作历史口径，不沿用为当前成绩。问题若在题目/标注，保留原版和变更记录、重新冻结新的评测版本；若在检索/门控，只用开发/校准集优化，另设未参与调参的验证集，不在现有盲测上选阈值。**验收：**每类差异有分母、样例和归因；对外数字按新版本报告更新或标历史未复现。
+  Result（2026-10-19）：新增 `scripts/rag_diagnosis.py` 与测试。396 题分桶 A 60 / B 70 / C 60 / D 114 / E 92，仅 282 题有知识锚点；旧报告 Recall@5 0.881、MRR 0.593 为 2026-10-18 历史快照，按当前 282 题确定性重算为 Recall@5 0.8812（分子 249/282）、MRR 0.5919，旧误放 0/114 不能当作当前复现。114 道 D 题现场 FAQ 一次调用无错误：旧口径 109 拒答 / 5 误放，修订口径 109 拒答 / 5 解释性拒答（退款天数×2、偏远运费×2、退货自提×1）；`RAG-B-D-退款天数` 证据明确“不承诺具体到账天数”，最终答复无具体承诺。旧口径与修订口径并存，未在盲测集调阈值或改答案。诊断产物在 `/tmp/rag-diagnosis/`（临时，不入库）。提交 `5e43de3`。
+- [ ] **N4｜低成本上游预检，然后串行补 Task 6（依赖 N2；全量 RAG 还依赖 N3）。**先确认聊天模型和结构化/工具调用各一条最小请求、嵌入与重排各一条最小请求成功，记录 HTTP 错误类别、限流窗口与实际模型名，不打印密钥；若有 401/402/429/499/超时，停止批量评测并标 `provider_error`，不盲重试。无并行占用同一 key 后，按“意图小样→意图全量→Agent 小样→Agent 全量→RAG 小样确认实际并发 1→RAG 396 题全量生成/拒答”的顺序单路执行；每阶段记录退出码、进度、报告 SHA、失败/跳过数与费用或调用量。中途失败保留不完整证据，下一次是否从头重跑及额度预算由用户确认。**验收：**各阶段报告与当前代码/数据/模型匹配，RAG `generation` 非空且错误/跳过按门控处理；限流不计为业务失败或通过。
+  Result（2026-10-19，部分完成）：五项最小预检均通过（deepseek-flash：chat 0.9s、structured 4.4s、tool_call 2.3s、BGE 嵌入 1024 维 0.2s、重排 3 条 1.0s）。意图小样 20/20；全量单轮 205/222（92.34%，JSON 越界 0，漂移 28/30；93 道边界探针无标签，不计准确率）→ `data/ch06/reports/intent_eval.json` SHA `04c3a5f2…ef7b`。Agent 小样 7/8；全量首跑 117/153，修正交互中断口径后 135/153（88.24%；single 115/123、toolchain 5/15、multi 15/15；18 条为缺订单号停在交互待选择，单列不冒充空答复）→ `data/ch02/reports/agent_eval.json` SHA `3e67fd51…d33f`。RAG 5 题小样检索段完成、生成段 60 秒超时（`provider_error`），两次探针正常；按规则未整批重跑，**396 题生成/拒答未完成**，RAG 阶段标 `not_run`。未达到验收。
+- [ ] **N5｜完成远程模型分发（需要用户先指定并授权对象存储/制品库；其余工作不依赖此授权）。**选定存储目标与访问方式后，仅上传经本地清单逐文件校验的 ONNX 包；填入 `artifact_uri`、`archive_sha256`，不得将密钥、私有访问令牌或 409 MB 模型包放入普通 Git。用全新临时目录从真实远端下载，验证归档哈希、文件清单、`make classifier-bootstrap` 幂等与 `make classifier-up` 健康；保留失败时不替换原包的测试。**验收：**Task 4 Step 4 / Task 5 Step 6 真实远端回下载通过；没有授权目标时继续标阻塞，不用本机复制冒充。
+  Result（2026-10-19）：仍阻塞。`data/ch10/artifact-manifest.json` 的 `artifact_uri` 为空，未获授权对象存储/制品库及访问方式；未上传 409 MB 模型包、未选择公开位置、未把本机复制冒充远程恢复。依赖 N5 的 N7 干净环境部分同样阻塞。
+- [ ] **N6｜飞轮隔离闭环、忠实度人工复核与最终报告（依赖 N4；分发 N5 可并行推进）。**使用专用 MySQL 库、专用 Milvus 集合和新 `FLYWHEEL_EVAL_RUN_ID`，先核对/备份旧 `iso05` 状态，绝不清理真实业务库；完成 50 题拒答→入池→归并→受控审核动作→写回→再次可答、回归与幂等。隔离脚本中的批准动作只证明审核工作流，不冒充 50 题均由真人审核。RAG 生成段出来后，仅对实际忠实度失败项逐条人工记录结论；没有逐条记录不称“人工幻觉率”。在最终代码 SHA 上运行完整 `make eval-release`，确认每阶段 `passed`、数据/模型/知识库版本一致，并重新生成 `project-evidence`；未通过就保留精确的 failed/provider_error/blocked 状态。**验收：**总状态真实通过才称全链路通过，历史指标只有同口径复现才沿用。
+  Result（2026-10-19，部分完成）：环隔离库先备份至 `backups/task6-flywheel-isolated-20261019/mewhelp_flywheel_eval.sql`（权限 600，SHA256 `06f52226…b7e`，Git 忽略）；新运行 `iso06`、库 `mewhelp_flywheel_eval`、集合 `flywheel_eval_iso06`。2 题小样 2/2；50 题 46/50：首次拒答 46、入池 46、待审 50、受控批准 50、写回 50、向量化 50、写回后再答 50/50。4 条（FW-003/017/027/028）首轮未进低置信池（意图未走知识兜底），不是集合串扰；脚本退出码 1，如实保留。报告 `data/ch09/reports/flywheel_closure_eval.json` SHA `1e140d9d…c6e5`。隔离集合运行后清理，线上 `knowledge` 始终 52 块。受控批准只证明审核工作流，不是真人审核。**幂等独立复跑与 RAG 忠实度逐条复核尚未完成。** 发布聚合总状态 failed，不称全链路通过。
+- [ ] **N7｜Task 8 干净环境与交付（依赖 N5、N6）。**从新的克隆/隔离环境按 README 配置并恢复模型，核查分类器、review/topics、商品/本人订单、拒答后下一轮不串答及跨用户订单不可见；重跑全量单测和发布评测，记录最终分母、代码 SHA 和受控服务版本。逐文件审核 `git status`、`git diff --check`、暂存清单及 staged diff；只显式暂存本轮代码、测试、经审核报告和文档，禁止 `git add .`，继续排除两份受保护报告、备份、密钥与模型大文件。按逻辑任务分提交并推送到现有分支；PR/合并 `main` 须另行由用户决定。**验收：**Task 8 全部勾选、远端 SHA 一致、无泄密和无证据越界。
+  Result（2026-10-19，部分完成）：本机业务回放已验证跨用户订单不可见、拒答后下一轮订单事实保留（`tests/graph/test_business_replay.py`、`test_agent_nodes.py`）；全量单测 672 passed / 2 skipped（2026-10-19，提交 `c850ab5` 后）；发布聚合总状态 failed（RAG `not_run`，意图/Agent/飞轮因 AI 辅助未审核数据记 `failed`）。**干净克隆部署仍阻塞于 N5**，不勾选。
+
+**并行关系：**N1、N2、N5 可独立安排（N5 等待存储授权）；N3 依赖 N1 的抽检/数据范围；N4 在 N2 之后，RAG 全量部分还须等待 N3；N6 在相关模型评测之后且只用隔离资源；N7 最后。共享上游 key 的意图、Agent、RAG、飞轮模型调用不得并行。若暂不授权 N5，仍可推进 N1–N4/N6，但 Task 8 空环境部署及总计划保持未完成。
