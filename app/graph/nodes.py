@@ -422,6 +422,7 @@ async def agent_tools(state) -> dict:
 
     tool_msgs = []
     actions = list(state.get("suggested_actions", []))
+    insufficient = None      # 本轮 query_faq 明确证据不足:由确定性闸转拒答,不让口头带过
     not_owned = False        # 这一轮有没有人报了不属于自己的订单号
     for tc in last.tool_calls:
         if tc["name"] == "submit_refund":
@@ -459,6 +460,13 @@ async def agent_tools(state) -> dict:
         else:
             # 含参数缺失的 create_ticket(decision is None):引擎校验拦下,错误说明回灌
             run = await engine.execute_tool_call(tc, cid, specs, user_id=uid)
+            if tc["name"] == "query_faq" and run.ok:
+                try:
+                    result = json.loads(run.tool_message.content or "{}")
+                except (TypeError, ValueError):
+                    result = {}
+                if isinstance(result, dict) and result.get("sufficient") is False:
+                    insufficient = str(result.get("source") or "retrieval_low_conf")
             if tc["name"] == "query_order" and not business.owns_order(
                     uid, str((tc.get("args") or {}).get("order_id") or "")):
                 not_owned = True
@@ -467,6 +475,18 @@ async def agent_tools(state) -> dict:
     if not_owned:
         actions.append({"type": "select_order", "orders": business.list_user_orders(uid)})
     out = {"messages": tool_msgs}
+    if insufficient:
+        # 证据门控:query_faq 已判不足时,模型不能改写成「没查到」继续作答,否则低置信题
+        # 既不进池也不转人工,飞轮和拒答边界都被绕过。这里直接走兜底节点同样的出口。
+        snapshot = state.get("retrieved_snapshot") or []
+        await repository.insert_low_confidence(
+            cid, _user_text(state), insufficient,
+            f"agent_tools:query_faq sufficient=false source={insufficient}",
+            retrieved_chunks=snapshot)
+        return {"messages": tool_msgs, "answer": FALLBACK_REPLY,
+                "suggested_actions": [{"type": "transfer_human"}],
+                "fallback_source": insufficient,
+                "trace": {"route": "fallback", "gate": "agent_tools_query_faq"}}
     if actions:
         out["suggested_actions"] = actions
     return out

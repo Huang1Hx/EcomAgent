@@ -104,6 +104,8 @@ def should_continue(state) -> str:
     token 花销是另一件事——它管的是烧钱和撑爆上下文,不是死循环,阈值要按真实用量分布标定,
     归第 9 章的成本控制一起讲。混在这里卡,一次估偏就把工具链整条掐断,而且掐在模型
     已经决定调工具之后,用户只看到半句「我这就去查」。"""
+    if state.get("answer"):
+        return "stop"   # 确定性出口(如 agent_tools 证据不足转兜底)已给答复,不再回模型
     last = state["messages"][-1]
     has_tool_calls = isinstance(last, AIMessage) and bool(last.tool_calls)
     if not has_tool_calls:

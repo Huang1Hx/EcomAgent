@@ -129,3 +129,56 @@ async def test_退款不给别人的单开表单入口(monkeypatch, builtin_only
     assert "refund_form" not in types          # 没有退款入口
     assert "select_order" in types             # 但给了出路:列出他自己的单
     assert out["messages"][0].status == "error"
+
+
+@pytest.mark.asyncio
+async def test_insufficient_faq_in_react_forces_refusal(monkeypatch, builtin_only_specs):
+    """知识检索已明说证据不足时,模型口头「没查到」不算拒答:必须走兜底入池 + 转人工。"""
+    from langchain_core.messages import ToolMessage
+
+    from app.tools.engine import ToolRun
+
+    async def fake_exec(tc, cid, specs, **kw):
+        return ToolRun(tool_call_id=tc["id"], name=tc["name"], ok=True, status="成功",
+                       tool_message=ToolMessage(
+                           content='{"sufficient": false, "source": "retrieval_low_conf"}',
+                           tool_call_id=tc["id"], name=tc["name"]))
+    inserted = []
+
+    async def fake_insert(*args, **kw):
+        inserted.append(args)
+    monkeypatch.setattr(nodes.engine, "execute_tool_call", fake_exec)
+    monkeypatch.setattr(nodes.repository, "insert_low_confidence", fake_insert)
+    ai = AIMessage("", tool_calls=[{"name": "query_faq", "args": {"keyword": "烘干箱"},
+                                    "id": "q1"}])
+    out = await nodes.agent_tools({"messages": [HumanMessage("烘干箱温度上限"), ai],
+                                   "conversation_id": 7, "user_id": "u"})
+    assert out["answer"] == nodes.FALLBACK_REPLY
+    assert out["suggested_actions"] == [{"type": "transfer_human"}]
+    assert out["fallback_source"] == "retrieval_low_conf"
+    assert inserted
+
+
+@pytest.mark.asyncio
+async def test_sufficient_faq_does_not_trip_refusal(monkeypatch, builtin_only_specs):
+    from langchain_core.messages import ToolMessage
+
+    from app.tools.engine import ToolRun
+
+    async def fake_exec(tc, cid, specs, **kw):
+        return ToolRun(tool_call_id=tc["id"], name=tc["name"], ok=True, status="成功",
+                       tool_message=ToolMessage(content='{"sufficient": true, "citations": []}',
+                                                tool_call_id=tc["id"], name=tc["name"]))
+    monkeypatch.setattr(nodes.engine, "execute_tool_call", fake_exec)
+    ai = AIMessage("", tool_calls=[{"name": "query_faq", "args": {"keyword": "退货"},
+                                    "id": "q2"}])
+    out = await nodes.agent_tools({"messages": [HumanMessage("能退吗"), ai],
+                                   "conversation_id": 8, "user_id": "u"})
+    assert "answer" not in out
+
+
+def test_should_continue_stops_when_answer_already_emitted():
+    from app.graph.routing import should_continue
+
+    ai = AIMessage("", tool_calls=[{"name": "query_faq", "args": {"keyword": "x"}, "id": "q"}])
+    assert should_continue({"messages": [ai], "answer": "已拒答", "steps": 1}) == "stop"
