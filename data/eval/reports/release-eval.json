@@ -1,0 +1,148 @@
+{
+  "generated_at": "2026-10-18T18:28:26",
+  "git_sha": "1e51b391a64eddcbf69975e5f38814b6374b7ce6",
+  "stages": {
+    "contract": {
+      "status": "not_run",
+      "command": "",
+      "report": "",
+      "metrics": {},
+      "error": "",
+      "note": "由主流程预置"
+    },
+    "unit": {
+      "status": "not_run",
+      "command": "",
+      "report": "",
+      "metrics": {},
+      "error": "",
+      "note": "由主流程预置"
+    },
+    "rag": {
+      "status": "passed",
+      "command": "",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch04/reports/rag_eval.json",
+      "metrics": {
+        "recall_at_5": 0.881,
+        "mrr": 0.593,
+        "n_samples": 396,
+        "refusal": {
+          "threshold": 0.26,
+          "answerable": {
+            "correct": 116,
+            "wrongly_refused": 166,
+            "total": 282
+          },
+          "absent": {
+            "correct": 114,
+            "wrongly_passed": 0,
+            "total": 114
+          },
+          "false_pass_rate": 0.0,
+          "false_refuse_rate": 0.5887
+        },
+        "complete": false,
+        "generation_skipped": null,
+        "false_pass": {
+          "numerator": 0,
+          "denominator": 114,
+          "rate": 0.0,
+          "ci95": [
+            0.0,
+            0.0326
+          ]
+        },
+        "false_refuse": {
+          "numerator": 166,
+          "denominator": 282,
+          "rate": 0.5887,
+          "ci95": [
+            0.5304,
+            0.6445
+          ]
+        }
+      },
+      "error": "生成段未完成",
+      "note": "dataset=data/eval/rag_blind_test.jsonl;threshold=0.26"
+    },
+    "intent": {
+      "status": "not_run",
+      "command": "",
+      "report": "",
+      "metrics": {},
+      "error": "",
+      "note": ""
+    },
+    "agent": {
+      "status": "invalid_report",
+      "command": "",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch02/reports/agent_eval.json",
+      "metrics": {},
+      "error": "",
+      "note": ""
+    },
+    "flywheel": {
+      "status": "blocked",
+      "command": "",
+      "report": "",
+      "metrics": {},
+      "error": "未提供隔离飞轮环境或未运行 make eval-flywheel-closure",
+      "note": ""
+    },
+    "classifier": {
+      "status": "passed",
+      "command": "",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch10/reports/eval_report.json",
+      "metrics": {
+        "micro_f1": 0.9835,
+        "macro_f1": 0.9833,
+        "n_samples": 161,
+        "labels": 17
+      },
+      "error": "",
+      "note": "evaluation_scope=existing_v1_regression_not_new_blind_test;model_sha256=d13c52f66a63f307399865565066811b3785be7df4af0c8e77fb9bc039eb2dd2;bundle=13e05e9f0477888a0f2fc8bbbb548189759429d5bcd7c98265532005127a04a4;本地产物 SHA256 已校验"
+    },
+    "context": {
+      "status": "passed",
+      "command": "",
+      "report": "/Users/huanghx/project/EcomAgent/data/eval/reports/context_eval.json",
+      "metrics": {
+        "fact_retention": {
+          "numerator": 50,
+          "denominator": 50,
+          "rate": 1.0,
+          "ci95": [
+            0.9286,
+            1.0
+          ]
+        }
+      },
+      "error": "",
+      "note": ""
+    }
+  },
+  "overall": {
+    "status": "invalid_report",
+    "passed": false,
+    "failed_stages": [
+      "contract",
+      "unit",
+      "intent",
+      "agent",
+      "flywheel"
+    ]
+  },
+  "confidence_threshold": 0.26,
+  "data_contract": {
+    "review_status": "ai_assisted_unreviewed",
+    "reviewers": 0,
+    "independent_release_evidence": false
+  },
+  "not_run_or_blocked": [
+    "contract",
+    "unit",
+    "intent",
+    "agent",
+    "flywheel"
+  ]
+}

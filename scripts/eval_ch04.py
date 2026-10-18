@@ -120,6 +120,14 @@ def dataset_role(path: str) -> str:
     return "development_only" if path == LEGACY_DEV_SET else "blind_test"
 
 
+def report_dataset(path: str | None = None) -> dict:
+    """报告数据血缘:当前评测集的路径与 SHA256(发布聚合据此判断报告是否过期)。"""
+    import hashlib
+    from pathlib import Path as _Path
+    p = _Path(path or eval_set_path())
+    return {"dataset": str(p), "dataset_sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
+
+
 def env_threshold() -> float:
     """固定阈值:默认取配置里的上线值;发布评测可用 RAG_CONF_THRESHOLD 冻结一份。"""
     return float(os.environ.get("RAG_CONF_THRESHOLD", settings.evidence_confidence_threshold))
@@ -595,7 +603,7 @@ async def main():
             _log("检索段与证据覆盖度已完成;页面将标注生成段未完成,上游恢复后重跑补全。")
     if _errs:
         _log(f"\n注:生成段有 {len(_errs)} 次 glm 调用超时/失败被跳过(上游不稳),已按可用样本计。")
-    meta = {"dataset": eval_path, "dataset_role": role,
+    meta = {**report_dataset(eval_path), "dataset_role": role,
             "review_status": sorted({s.get("review_status", "unknown") for s in samples}),
             "n_samples": len(samples), "kb_chunks": await _kb_chunks(),
             "recall_k": RECALL_K, "retrieve_k": K,

@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-10-18T18:28:26",
+  "git_sha": "1e51b391a64eddcbf69975e5f38814b6374b7ce6",
+  "items": [
+    {
+      "capability": "BGE-M3 + BM25 + RRF + BGE-Reranker",
+      "status": "supported",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch04/reports/rag_eval.json",
+      "statement": "四策略检索与盲测 Recall@5/MRR/答案覆盖"
+    },
+    {
+      "capability": "四信号置信度与拒答治理",
+      "status": "partially_supported",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch04/reports/rag_eval.json",
+      "statement": "固定阈值下误放/误拦;阈值来自独立校准集"
+    },
+    {
+      "capability": "九类意图到五出口 Workflow + Agent",
+      "status": "unsupported",
+      "report": ";/Users/huanghx/project/EcomAgent/data/ch02/reports/agent_eval.json",
+      "statement": "九类意图、工具与订单归属校验"
+    },
+    {
+      "capability": "三层上下文、异步摘要、工具裁剪",
+      "status": "supported",
+      "report": "/Users/huanghx/project/EcomAgent/data/eval/reports/context_eval.json",
+      "statement": "上下文固定集事实保留率"
+    },
+    {
+      "capability": "三入口数据飞轮",
+      "status": "unsupported",
+      "report": "",
+      "statement": "隔离环境闭环:拒答→入池→归并→批准→写回→再答"
+    },
+    {
+      "capability": "17类多标签 RoBERTa + ONNX",
+      "status": "supported",
+      "report": "/Users/huanghx/project/EcomAgent/data/ch10/reports/eval_report.json",
+      "statement": "现有 v1 测试集回归;不是新独立盲测"
+    },
+    {
+      "capability": "架构决策可追溯性",
+      "status": "partially_supported",
+      "report": "data/eval/reports/release-eval.json",
+      "statement": "按提交、报告和数据集合同追溯;仅当前证据"
+    }
+  ]
+}
