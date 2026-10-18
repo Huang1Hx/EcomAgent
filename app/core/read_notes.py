@@ -17,13 +17,13 @@
 import asyncio
 import json
 import logging
+import os
 import re
 
 logger = logging.getLogger(__name__)
 
 MAX_CHARS = 130          # 一句到两句的量;再长就不是「读图」而是又一段正文
-TIMEOUT = 120.0          # 单条注的等待上限。带思维链的模型一条要跑一分钟出头,
-                         # 而这是产物落盘时的一次性开销,不是页面打开时的等待,给宽点值得
+TIMEOUT = 30.0           # 单条注的等待上限;读图只是附属产物,不该和正评分数一起等满两分钟
 
 # 数字要认,标识符里的数字不能认:p25 是分位名、Recall@10 是指标名、bge-m3 是模型名,
 # 它们里面的 25 / 10 / 3 都不是模型下的结论。所以前面挨着字母、@、下划线、连字符或小数点的不算。
@@ -147,6 +147,14 @@ def tidy(text: str) -> str:
     return text if text.endswith(("。", ")", ")")) else text + "。"
 
 
+def timeout_seconds(default: float | None = None) -> float:
+    """读图小注的单条等待上限;RAG_NOTE_TIMEOUT 可覆盖,必须 > 0。"""
+    value = float(os.environ.get("RAG_NOTE_TIMEOUT", TIMEOUT if default is None else default))
+    if value <= 0:
+        raise ValueError("RAG_NOTE_TIMEOUT 必须 > 0")
+    return value
+
+
 async def generate(kind: str, payload, model=None) -> str | None:
     """生成一条读图小注;拿不到、太长、数字对不上,一律回 None 让页面用兜底句。"""
     what, decision = KINDS[kind]
@@ -156,7 +164,7 @@ async def generate(kind: str, payload, model=None) -> str | None:
     prompt = (f"{_RULES}\n\n这张图画的是:{what}\n读者要做的判断:{decision}\n\n"
               f"数据(JSON):\n{json.dumps(payload, ensure_ascii=False)}")
     try:
-        resp = await asyncio.wait_for(model.ainvoke(prompt), timeout=TIMEOUT)
+        resp = await asyncio.wait_for(model.ainvoke(prompt), timeout=timeout_seconds())
     except Exception as e:
         logger.warning("读图小注 %s 生成失败(%s: %s),页面用兜底句", kind, type(e).__name__, e)
         return None

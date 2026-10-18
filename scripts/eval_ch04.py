@@ -56,7 +56,7 @@ RECALL_K = 5           # 召回率的截断位:一道题需要的证据要在前
                        # 两三块不同小节的知识,@1 只看第一条根本评不到它们,@5 才评得动
 RETR_CONCURRENCY = 1   # 默认单路,检索也会调用远端嵌入和重排
 GEN_CONCURRENCY = 1    # 学校模型与 CLI/项目共享额度;这里只限制本评测进程
-CALL_TIMEOUT = 120.0   # 45s 曾截断较慢裁判调用;仍给每次调用有限超时
+CALL_TIMEOUT = 60.0    # 单次生成/裁判/拒答等待上限;45s 曾截断慢裁判,60s 起步,可用 RAG_CALL_TIMEOUT 覆盖
 
 
 def eval_concurrency(retr: int = RETR_CONCURRENCY, gen: int = GEN_CONCURRENCY) -> tuple[int, int]:
@@ -182,13 +182,33 @@ def refusal_metrics(samples, hits_by_id: dict, threshold: float | None = None) -
             "false_refuse_rate": round(tn / (tp + tn), 4) if tp + tn else None}
 
 
-def _load(path: str | None = None):
+def eval_limit() -> int | None:
+    """RAG_EVAL_LIMIT:小样按文件顺序取前 N 条,便于在限流前低成本验证链路。"""
+    raw = os.environ.get("RAG_EVAL_LIMIT", "").strip()
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError as e:
+        raise ValueError("RAG_EVAL_LIMIT 必须是正整数") from e
+    if value < 1:
+        raise ValueError("RAG_EVAL_LIMIT 必须是正整数")
+    return value
+
+
+def load_samples(path: str | None = None):
     path = path or eval_set_path()
     if not pathlib.Path(path).exists():
         raise SystemExit(f"评估集不存在:{path}(旧开发集用 RAG_EVAL_SET={LEGACY_DEV_SET})")
     with open(path, encoding="utf-8") as fh:
         # 旧开发集没有 expect_sections_all;评测器只读标准小节/要点,不改答案
-        return [json.loads(ln) for ln in fh if ln.strip()]
+        samples = [json.loads(ln) for ln in fh if ln.strip()]
+    limit = eval_limit()
+    return samples if limit is None else samples[:limit]
+
+
+# 兼容旧内部调用名;真正的抽样由 load_samples 统一负责
+_load = load_samples
 
 
 # ---------- 通用 ----------
@@ -300,8 +320,15 @@ def _mean(xs):
 
 # ---------- 段1+2:检索 Recall/MRR + 证据覆盖度(确定性) ----------
 async def _retrieve(strat, s):
+    """检索同样要有限等待:Milvus/嵌入卡住时按上游失败中止,不能无声挂住整轮。"""
     async with _retr_sem:
-        return await retrieval.search_knowledge(s["query"], strategy=strat, top_k=K)
+        try:
+            return await asyncio.wait_for(
+                retrieval.search_knowledge(s["query"], strategy=strat, top_k=K),
+                timeout=eval_call_timeout())
+        except TimeoutError as e:
+            raise ProviderCallError(f"retrieval:{strat}:{s.get('id', '?')}",
+                                    type(e).__name__) from e
 
 
 async def _deterministic(samples):
@@ -625,7 +652,9 @@ async def main():
         f"{BUCKET_LABEL.get(b, b)} {n}" for b, n in per.most_common()) + f"),策略 {STRATEGIES}")
     if role == "development_only":
         _log("口径:旧 300 题已参与调优,本报告只作开发回归,不得表述为独立测试结果。")
-    _log(f"检索并发 {retr_concurrency} · 生成并发 {gen_concurrency} · 单调用超时 {timeout:.0f}s\n")
+    _log(f"检索并发 {retr_concurrency} · 生成并发 {gen_concurrency} · 单调用超时 {timeout:.0f}s"
+         f" · 读图小注超时 {read_notes.timeout_seconds():.0f}s"
+         + (f" · 小样前 {eval_limit()} 题" if eval_limit() else " · 全量") + "\n")
     retrieval_data, coverage_data, HITS = await _deterministic(samples)
     refusal = refusal_metrics(samples, HITS["hybrid_rerank"])
     generation_data = None
@@ -651,6 +680,7 @@ async def main():
             "recall_k": RECALL_K, "retrieve_k": K,
             "retrieval_concurrency": retr_concurrency, "concurrency": gen_concurrency,
             "call_timeout_seconds": timeout, "chat_model": settings.chat_model,
+            "eval_limit": eval_limit(), "note_timeout_seconds": read_notes.timeout_seconds(),
             "generation_status": generation_status, "provider_failures": provider_failures,
             "confidence_threshold": _CONF_THRESHOLD,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
