@@ -47,4 +47,6 @@ uv run pytest tests/test_eval_dataset_contracts.py -q
 - RAG 盲测的 B 桶由知识库型号锚点展开为 2 个问法;E/D 桶按锚点成题,
   因此各桶内问法数量分布不完全均衡,详见各 manifest 的 `support.bucket`。
 - 意图边界表达不参与九类支持数,只验证不误归业务类。
-- `context_test.jsonl` 只固定事实与轮数,不预置 AI 生成的逐轮对话,避免把生成结果当标准答案。
+- `context_test.jsonl` 的逐轮对话是模板生成的**评测输入**,不是标准答案;标准答案是
+  事实列表,事实先陈述、后追问。`scripts/eval_context.py` 只验证三层装配的确定性,
+  不调用模型,所以事实保留率 1.0 不代表在线生成质量。

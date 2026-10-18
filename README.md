@@ -30,6 +30,10 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 `make ch10-train`、`make ch10-eval`、`make ch10-export`、`make classifier-up`。
 数据版本、模型位置与验收方式见 [分类器训练与恢复](docs/classifier-artifacts.md)。
 
+模型包（约 409 MB）不进普通 Git，发布清单里的 `artifact_uri` 目前为空；
+远程下载与空环境启动因此仍未验收，授权存储后可用 `make classifier-bootstrap`。
+在此之前，另一台机器需手工复制完整的 `data/ch10/onnx/` 再启动。
+
 ## 代码怎么组织
 
 | 位置 | 装的是什么 |
@@ -54,16 +58,18 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 | 能力 | 主要内容 | 验收 |
 | - | - | - |
 | 对话入口 | 流式对话、结构化提取 | `make eval` |
-| Agent 工具 | 五个业务工具、Function Calling | `make eval-agent` |
+| Agent 工具 | 商品浏览、本人订单、物流与 FAQ 等受控工具 | `make eval-agent` |
 | 知识库 | 切块、嵌入、MySQL 与 Milvus 双写、对话挖知识 | `make kb-build` `make kb-vectorize` `make eval-retrieval` |
 | 混合检索 | BM25、向量检索、RRF、重排、Query 改写 | `make smoke-rag` `make eval-rag` |
 | 工作流 | LangGraph 分流、ReAct、退款 interrupt/resume | `make smoke-interrupt` `make eval-ch06` |
 | 上下文 | 滑窗、摘要、前缀缓存 | `make eval-ch07` |
 | 工具系统 | MCP 动态发现、统一执行引擎、审计日志 | `make eval-ch08` |
-| 数据飞轮 | Langfuse、自检拒答、审核回写、成本统计 | `make langfuse-up` `make flywheel` `make eval-flywheel` `make cost-report` |
+| 数据飞轮 | 自检拒答、隔离闭环、审核回写、成本统计 | `make flywheel` `make eval-flywheel-closure` `make cost-report` |
 | 主题分类 | 语料治理、微调、阈值扫描、ONNX 推理服务 | `make ch10-corpus` `make ch10-train` `make ch10-eval` |
+| 发布评测 | 分层数据合同、盲测、意图、Agent、飞轮、分类器、上下文聚合 | `make eval-release` |
 
 带说明的命令及其依赖提示可以通过 `make help` 查看。
+评测口径、数据审核状态和对外表述规则见 [发布评测口径](docs/evaluation.md)。
 
 ## 端口
 
