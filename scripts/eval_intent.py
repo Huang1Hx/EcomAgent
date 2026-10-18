@@ -106,7 +106,50 @@ async def _one(case: dict, sem: asyncio.Semaphore | None = None) -> dict:
 def error_case(case_id: str, exc: Exception) -> dict:
     return {"id": case_id, "kind": "error", "query": "", "expected": None, "actual": None,
             "confidence": None, "valid_output": False, "correct": False,
+            "review_status": case_review_status(case_id),
             "error": f"{type(exc).__name__}: {exc}"}
+
+
+def case_review_status(case_id: str) -> str | None:
+    for case in load_cases():
+        if case.get("id") == case_id:
+            return case.get("review_status")
+    return None
+
+
+def build_report(results: list[dict], *, dataset_sha256: str, model: str,
+                 limit: int | None = None) -> dict:
+    """按真实标注构报告;未标注题只计覆盖面,不进准确率分母。"""
+    errors = [r for r in results if r.get("error")]
+    labeled = [(r["actual"], r["expected"], r["kind"]) for r in results
+               if r["expected"] is not None]
+    table = confusion([p for p, _, _ in labeled], [g for _, g, _ in labeled], CLASSES)
+    metrics = prf(table)
+    correct = sum(p == g for p, g, _ in labeled)
+    boundary = [r for r in results if r["kind"] == "boundary"]
+    drift = [(r["actual"], r["expected"]) for r in results if r["kind"] == "drift"]
+    return {
+        "meta": {"generated_at": datetime.now().isoformat(timespec="seconds"),
+                 "dataset": str(DATASET.relative_to(ROOT)),
+                 "dataset_sha256": dataset_sha256,
+                 "review_status": sorted({r.get("review_status") for r in results
+                                          if r.get("review_status")}),
+                 "independent_release_evidence": False, "chat_model": model,
+                 "n": len(results), "n_labeled": len(labeled),
+                 "n_unlabeled": len(results) - len(labeled), "limit": limit},
+        **({"error": errors[0]["error"], "error_count": len(errors)} if errors else {}),
+        "summary": {"correct": correct, "total": len(labeled),
+                    "accuracy": round(correct / len(labeled), 4) if labeled else None,
+                    "unlabeled": len(results) - len(labeled),
+                    "invalid_output": sum(not r["valid_output"] for r in results),
+                    "drift_correct": sum(p == g for p, g in drift), "drift_total": len(drift),
+                    "boundary_other": sum(r["actual"] == "其他" for r in boundary),
+                    "boundary_total": len(boundary),
+                    "boundary_labeled": sum(r["expected"] is not None for r in boundary),
+                    "boundary_role": "unlabeled_probe" if any(
+                        r["expected"] is None for r in boundary) else "labeled"},
+        "per_class": metrics, "confusion": table, "cases": results,
+    }
 
 
 async def main() -> int:
@@ -118,44 +161,24 @@ async def main() -> int:
         cases = cases[:args.limit]
     sem = asyncio.Semaphore(eval_concurrency())
     results = await asyncio.gather(*(_one(c, sem) for c in cases))
-    errors = [r for r in results if r.get("error")]
-    labeled = [(r["actual"], r["expected"], r["kind"]) for r in results
-               if r["expected"] is not None]
-    table = confusion([p for p, _, _ in labeled], [g for _, g, _ in labeled], CLASSES)
-    metrics = prf(table)
-    correct = sum(p == g for p, g, _ in labeled)
-    boundary = [r for r in results if r["kind"] == "boundary"]
-    drift = [(r["actual"], r["expected"]) for r in results if r["kind"] == "drift"]
-    payload = {
-        "meta": {"generated_at": datetime.now().isoformat(timespec="seconds"),
-                 "dataset": str(DATASET.relative_to(ROOT)),
-                 "dataset_sha256": __import__("hashlib").sha256(DATASET.read_bytes()).hexdigest(),
-                 "review_status": sorted({c.get("review_status") for c in cases}),
-                 "independent_release_evidence": False,
-                 "chat_model": settings.intent_model or settings.chat_model,
-                 "n": len(cases), "n_labeled": len(labeled)},
-        **({"error": errors[0]["error"], "error_count": len(errors)} if errors else {}),
-        "summary": {"correct": correct, "total": len(labeled),
-                    "accuracy": round(correct / len(labeled), 4) if labeled else None,
-                    "invalid_output": sum(not r["valid_output"] for r in results),
-                    "drift_correct": sum(p == g for p, g in drift), "drift_total": len(drift),
-                    "boundary_other": sum(r["actual"] == "其他" for r in boundary),
-                    "boundary_total": len(boundary)},
-        "per_class": metrics,
-        "confusion": table,
-        "cases": results,
-    }
+    payload = build_report(
+        results,
+        dataset_sha256=__import__("hashlib").sha256(DATASET.read_bytes()).hexdigest(),
+        model=settings.intent_model or settings.chat_model,
+        limit=args.limit or None)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(payload, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    metrics = payload["per_class"]
     print(f"{'label':8s} {'TP':>3s} {'pred':>4s} {'gold':>4s} {'P':>6s} {'R':>6s} {'F1':>6s}")
     for label, m in metrics.items():
         print(f"{label:8s} {m['tp']:3d} {m['predicted']:4d} {m['gold']:4d} "
               f"{m['precision']:6.3f} {m['recall']:6.3f} {m['f1']:6.3f}")
-    print(f"\n判对 {correct}/{len(labeled)};JSON 越界 {payload['summary']['invalid_output']} 条;"
-          f"漂移 {payload['summary']['drift_correct']}/{len(drift)};"
-          f"边界落其他 {payload['summary']['boundary_other']}/{len(boundary)}")
+    s = payload["summary"]
+    print(f"\n判对 {s['correct']}/{s['total']};未标注 {s['unlabeled']} 条不计准确率;"
+          f"JSON 越界 {s['invalid_output']} 条;漂移 {s['drift_correct']}/{s['drift_total']};"
+          f"边界落其他 {s['boundary_other']}/{s['boundary_total']}")
     print(f"报告:{REPORT.relative_to(ROOT)}(AI 辅助未审核数据集,不构成人工复核证据)")
-    return 1 if errors else 0
+    return 1 if payload.get("error_count") else 0
 
 
 if __name__ == "__main__":

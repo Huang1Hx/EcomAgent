@@ -160,6 +160,57 @@ async def test_insufficient_faq_in_react_forces_refusal(monkeypatch, builtin_onl
 
 
 @pytest.mark.asyncio
+async def test_insufficient_faq_does_not_override_deterministic_business_facts(
+        monkeypatch, builtin_only_specs):
+    """业务前置已给出本轮订单事实时,模型误调 query_faq 不足不能覆盖正确答复。"""
+    from langchain_core.messages import ToolMessage
+
+    from app.tools.engine import ToolRun
+
+    async def fake_exec(tc, cid, specs, **kw):
+        return ToolRun(tool_call_id=tc["id"], name=tc["name"], ok=True, status="成功",
+                       tool_message=ToolMessage(
+                           content='{"sufficient": false, "source": "retrieval_low_conf"}',
+                           tool_call_id=tc["id"], name=tc["name"]))
+    inserted = []
+
+    async def fake_insert(*args, **kw):
+        inserted.append(args)
+    monkeypatch.setattr(nodes.engine, "execute_tool_call", fake_exec)
+    monkeypatch.setattr(nodes.repository, "insert_low_confidence", fake_insert)
+    ai = AIMessage("", tool_calls=[{"name": "query_faq", "args": {"keyword": "订单"},
+                                    "id": "q3"}])
+    out = await nodes.agent_tools({
+        "messages": [HumanMessage("订单 1001 多少钱"), ai],
+        "conversation_id": 9, "user_id": "u",
+        "business_context": {"kind": "order", "order_id": "1001", "order": {"amount": 1739}}})
+    assert "answer" not in out
+    assert not inserted
+
+
+@pytest.mark.asyncio
+async def test_insufficient_faq_does_not_override_refund_policy_evidence(
+        monkeypatch, builtin_only_specs):
+    from langchain_core.messages import ToolMessage
+
+    from app.tools.engine import ToolRun
+
+    async def fake_exec(tc, cid, specs, **kw):
+        return ToolRun(tool_call_id=tc["id"], name=tc["name"], ok=True, status="成功",
+                       tool_message=ToolMessage(
+                           content='{"sufficient": false, "source": "retrieval_low_conf"}',
+                           tool_call_id=tc["id"], name=tc["name"]))
+    monkeypatch.setattr(nodes.engine, "execute_tool_call", fake_exec)
+    ai = AIMessage("", tool_calls=[{"name": "query_faq", "args": {"keyword": "退款"},
+                                    "id": "q4"}])
+    out = await nodes.agent_tools({
+        "messages": [HumanMessage("这一单能退吗"), ai],
+        "conversation_id": 10, "user_id": "u", "route": "refund_flow",
+        "evidence": "[1] 退款规则", "order_data": {"order_id": "1001"}})
+    assert "answer" not in out
+
+
+@pytest.mark.asyncio
 async def test_sufficient_faq_does_not_trip_refusal(monkeypatch, builtin_only_specs):
     from langchain_core.messages import ToolMessage
 

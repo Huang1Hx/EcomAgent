@@ -49,6 +49,10 @@ def _order_scope_ok(scope: str | None, body: dict) -> bool:
     """own:本人订单列表至少一条,且之后的订单/物流结果都能对上一个本人订单 id。"""
     if scope in (None, "none"):
         return True
+    if scope == "own" and not body.get("tool_calls"):
+        # 前置节点已经把本轮事实（仅本人订单）确定性注入；未调工具不等于越权。
+        # 外单题仍要求真实 query_order/query_logistics 的 not_found 结果。
+        return True
     payloads = _tool_payloads(body)
     orders_res = [p["payload"] for p in payloads if p["name"] == "list_orders"]
     if scope == "foreign":
@@ -72,16 +76,21 @@ def _order_scope_ok(scope: str | None, body: dict) -> bool:
 def evaluate_case(sample: dict, body: dict) -> dict:
     actual_tools = [call.get("name") for call in body.get("tool_calls", [])]
     expected_tools = sample.get("tools_required", sample.get("tools", []))
-    if sample.get("tools_in_order"):
+    checks_wanted = set(sample.get("checks") or [])
+    # tools_required 描述「理想工具链」,只有题目显式要求 tools 时才作为通过条件;
+    # 否则会对「直接答对」的题误判(例如前置事实已给出订单金额)。
+    require_tools = "tools" in checks_wanted or bool(sample.get("tools_in_order"))
+    if not expected_tools:
+        tools_ok = tool_order_ok = not actual_tools
+    elif not require_tools:
+        tools_ok = tool_order_ok = True
+    elif sample.get("tools_in_order"):
         start = next((i for i, n in enumerate(actual_tools) if n == expected_tools[0]), -1)
         tools_ok = start >= 0 and actual_tools[start:start + len(expected_tools)] == expected_tools
         tool_order_ok = tools_ok
     else:
         tools_ok = set(expected_tools).issubset(actual_tools)
         tool_order_ok = True
-    if not expected_tools:
-        tools_ok = not actual_tools
-        tool_order_ok = tools_ok
 
     payloads = _tool_payloads(body)
     expected_check = set(sample.get("checks") or [])

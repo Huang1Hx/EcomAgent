@@ -475,9 +475,12 @@ async def agent_tools(state) -> dict:
     if not_owned:
         actions.append({"type": "select_order", "orders": business.list_user_orders(uid)})
     out = {"messages": tool_msgs}
-    if insufficient:
-        # 证据门控:query_faq 已判不足时,模型不能改写成「没查到」继续作答,否则低置信题
-        # 既不进池也不转人工,飞轮和拒答边界都被绕过。这里直接走兜底节点同样的出口。
+    has_turn_facts = state.get("route") == "refund_flow" \
+        or bool(state.get("business_context")) or bool(state.get("order_data"))
+    if insufficient and not has_turn_facts:
+        # 证据门控:只有知识路(本轮没有确定性业务/政策事实)才强制拒答。
+        # 业务/退款链已经由前置节点给出只读事实时,模型误调 query_faq 不足不能覆盖正确答复;
+        # 若这里一律拒答,订单金额题会被空证据截成兜底,反而不答已有事实。
         snapshot = state.get("retrieved_snapshot") or []
         await repository.insert_low_confidence(
             cid, _user_text(state), insufficient,

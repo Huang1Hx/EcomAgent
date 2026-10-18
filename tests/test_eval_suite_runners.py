@@ -17,6 +17,20 @@ def test_intent_confusion_matrix_per_class():
     assert round(m["售后"]["f1"], 4) == 0.0
 
 
+def test_agent_tools_only_checked_when_sample_requests_tools():
+    """checks 未要求 tools 时,不必因为模型直接回答而判失败;答案约束仍生效。"""
+    from scripts.eval_agent import evaluate_case
+
+    sample = {"id": "AGT-004", "query": "订单 1001 多少钱", "tools_required": ["query_order"],
+              "checks": ["answer_nonempty"], "order_scope": "own",
+              "answer_any": ["1739"]}
+    body = {"answer": "订单 1001 的金额是 1739 元。", "suggested_actions": [],
+            "tool_calls": [], "tool_results": []}
+    case = evaluate_case(sample, body)
+    assert case["checks"]["tools"] is True
+    assert case["passed"] is True
+
+
 def test_agent_toolchain_checks_order_and_result():
     sample = {"id": "x", "query": "我的订单和其中一单的物流",
               "tools_required": ["list_orders", "query_logistics"], "tools_in_order": True,
