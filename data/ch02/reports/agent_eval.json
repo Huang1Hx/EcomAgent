@@ -1,25 +1,47 @@
 {
   "meta": {
-    "generated_at": "2026-09-08T22:11:39",
-    "chat_model": "deepseek-ai/DeepSeek-V4-Flash",
-    "base_url": "http://localhost:8000"
+    "generated_at": "2026-10-19T04:33:03",
+    "chat_model": "deepseek-flash",
+    "base_url": "http://127.0.0.1:8000",
+    "dataset": "data/eval/agent_test.jsonl",
+    "dataset_sha256": "2ca78f167a0bc58bb52dd779ab8cdba4943ddae636953c219fe98037cf04f510",
+    "review_status": [
+      "ai_assisted_unreviewed"
+    ],
+    "independent_release_evidence": false
   },
   "summary": {
-    "passed": 7,
-    "total": 7,
-    "rate": 1.0,
-    "all_pass": true
+    "passed": 135,
+    "total": 153,
+    "rate": 0.8824,
+    "all_pass": false,
+    "by_kind": {
+      "multi": {
+        "passed": 15,
+        "total": 15
+      },
+      "single": {
+        "passed": 115,
+        "total": 123
+      },
+      "toolchain": {
+        "passed": 5,
+        "total": 15
+      }
+    }
   },
   "cases": [
     {
-      "id": "A01",
-      "question": "订单 1001 的物流到哪了",
+      "id": "AGT-001",
+      "kind": "single",
+      "question": "我的快递怎么还没到",
       "passed": true,
       "expected_tools": [
-        "query_order",
+        "list_orders",
         "query_logistics"
       ],
       "actual_tools": [
+        "list_orders",
         "query_order",
         "query_logistics"
       ],
@@ -27,111 +49,507 @@
       "actual_actions": [],
       "expected_product_found": null,
       "actual_product_found": null,
-      "answer": "您的订单 1001（智能猫砂盆）目前物流情况如下：\n\n📦 **物流单号**：SF213502378238（顺丰）\n📍 **当前状态**：已揽件\n📍 **当前位置**：成都分拨中心，已发出\n\n包裹刚完成揽件并从成都发出，正在运输途中。由于物流轨迹是外部服务实时更新的，具体的配送时间我这边无法承诺，建议您稍后留意物流信息的动态更新哦。有其他需要随时找我~ 😊",
+      "answer": "帮您查到啦，您名下目前有这几个订单：\n\n| 订单号 | 商品 | 状态 |\n|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 |\n| 8659 | 智能猫砂盆 | 已签收 |\n| 2002 / 6796 / 1137 | 自动饮水机 / 智能猫砂盆 / 猫粮5kg | 待付款 |\n\n其中**订单 1001（智能猫砂盆，¥1739）**的物流情况是：\n- 物流单号：SF213502378238\n- 当前状态：**已揽件**\n- 最新轨迹：成都分拨中心 已发出\n\n也就是说包裹已经由快递揽收并从成都分拨中心发出，还在运输途中，暂时没有更细的在途节点。具体送达时间以快递实际派送为准，我这边无法承诺到货时间，建议您留意物流更新～\n\n另外，订单 8659 显示**已签收**，如果您说的是这一单，可以确认下是否已由家人或门卫代收。请问您想跟进的是哪一单呢？",
       "checks": {
         "tools": true,
+        "tool_order": true,
+        "tool_result": true,
         "actions": true,
         "product_found": true,
-        "answer": true
+        "answer_nonempty": true,
+        "order_scope": true
       }
     },
     {
-      "id": "A02",
-      "question": "智能猫砂盆有货吗",
+      "id": "AGT-002",
+      "kind": "single",
+      "question": "单号 SF123456 现在到哪了",
       "passed": true,
       "expected_tools": [
-        "query_product"
+        "query_logistics"
       ],
       "actual_tools": [
-        "query_product"
+        "query_logistics"
       ],
       "expected_actions": [],
-      "actual_actions": [],
-      "expected_product_found": true,
-      "actual_product_found": true,
-      "answer": "有的！我们目前有 **3 款智能猫砂盆** 在售，都有货哦：\n\n1. **智能猫砂盆 Pro** — ¥1739，库存 28 件\n   - 9L，适合 1.5kg 至 8kg 猫咪\n   - 自动清理、活性炭除臭，支持 App 健康记录\n\n2. **智能猫砂盆 Lite** — ¥1099，库存 45 件\n   - 6L，适合 1.5kg 至 6kg 猫咪\n   - 自动清理与物理除臭，不含 App 联网功能\n\n3. **智能猫砂盆 Max** — ¥2399，库存 12 件\n   - 12L，适合大型猫与多猫家庭\n   - 双重称重防夹、App 多猫健康档案\n\n请问您家猫咪的体型或数量是怎样的呢？我可以帮您推荐最合适的一款～ 😊",
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "帮您查到了这个单号的物流信息：\n\n- **物流单号**：SF123456\n- **当前状态**：已揽件\n- **当前位置**：广州\n- **最新轨迹**：广州分拨中心 已发出\n\n另外提醒一下：我在您名下的订单里没有找到与这个单号对应的订单记录，所以无法确认这一单是否属于您的账户。如果这是帮别人查的，或者您想核对订单详情，可以把**订单号**发给我，我帮您查一下订单和物流的对应关系～\n\n后续物流更新以快递公司实际揽收和派送记录为准，具体送达时间我这边无法保证，还请留意物流推送哦。",
       "checks": {
         "tools": true,
+        "tool_order": true,
+        "tool_result": true,
         "actions": true,
         "product_found": true,
-        "answer": true
+        "answer_nonempty": true,
+        "order_scope": true
       }
     },
     {
-      "id": "A03",
-      "question": "有汽水吗",
+      "id": "AGT-003",
+      "kind": "single",
+      "question": "包裹到哪个城市了",
       "passed": true,
       "expected_tools": [
-        "query_product"
+        "list_orders",
+        "query_logistics"
       ],
       "actual_tools": [
-        "query_product"
-      ],
-      "expected_actions": [],
-      "actual_actions": [],
-      "expected_product_found": false,
-      "actual_product_found": false,
-      "answer": "抱歉，我查询了一下，目前我们的商品目录中**没有销售汽水**这类商品哦。\n\n如果您想找其他饮品或零食，可以告诉我具体想找什么，我帮您查查看～ 😊",
-      "checks": {
-        "tools": true,
-        "actions": true,
-        "product_found": true,
-        "answer": true
-      }
-    },
-    {
-      "id": "A04",
-      "question": "宠物定位器有货吗",
-      "passed": true,
-      "expected_tools": [
-        "query_product"
-      ],
-      "actual_tools": [
-        "query_product"
-      ],
-      "expected_actions": [],
-      "actual_actions": [],
-      "expected_product_found": true,
-      "actual_product_found": true,
-      "answer": "我帮您查了一下，「宠物定位器」（4G 定位，IP67 防水，支持电子围栏）目前**暂时缺货**，库存为 0，暂时无法下单购买。\n\n这款商品售价为 **299 元**。如果您需要，可以订阅到货提醒，等补货后我们会第一时间通知您。请问还有其他可以帮您的吗？😊",
-      "checks": {
-        "tools": true,
-        "actions": true,
-        "product_found": true,
-        "answer": true
-      }
-    },
-    {
-      "id": "A05",
-      "question": "订单 2002 多少钱",
-      "passed": true,
-      "expected_tools": [
-        "query_order"
-      ],
-      "actual_tools": [
-        "query_order"
+        "list_orders",
+        "query_order",
+        "query_order",
+        "query_logistics",
+        "query_logistics"
       ],
       "expected_actions": [],
       "actual_actions": [],
       "expected_product_found": null,
       "actual_product_found": null,
-      "answer": "订单 2002 是「自动饮水机」，金额 **1557 元**，目前状态为「待付款」。请问还需要我帮你做什么吗？😊",
+      "answer": "您名下有两个已付款/已签收的包裹，物流情况如下：\n\n| 订单号 | 商品 | 物流单号 | 物流状态 | 当前城市 |\n|---|---|---|---|---|\n| 1001 | 智能猫砂盆 | SF213502378238 | 已揽件 | **成都**（成都分拨中心已发出） |\n| 8659 | 智能猫砂盆 | SF241565447350 | 已揽件 | **杭州**（杭州分拨中心已发出） |\n\n另外提醒一下：订单 8659 在订单里显示为「已签收」，但物流轨迹目前只到「已揽件」，两者信息不太一致，建议您留意后续轨迹更新，或联系快递核实。\n\n您想重点看哪一单的详细轨迹？我可以再帮您跟进～",
       "checks": {
         "tools": true,
+        "tool_order": true,
+        "tool_result": true,
         "actions": true,
         "product_found": true,
-        "answer": true
+        "answer_nonempty": true,
+        "order_scope": true
       }
     },
     {
-      "id": "A06",
-      "question": "我要投诉，你们太差了",
+      "id": "AGT-004",
+      "kind": "single",
+      "question": "订单 1001 多少钱",
+      "passed": true,
+      "expected_tools": [
+        "query_order"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "订单 1001 的金额是 **1739 元**，商品为「智能猫砂盆」，当前状态为「已付款」，下单时间是 2026-07-04 10:00。\n\n如需查看物流进度或其他信息，随时告诉我～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-005",
+      "kind": "single",
+      "question": "我最近买了什么",
+      "passed": true,
+      "expected_tools": [
+        "list_orders"
+      ],
+      "actual_tools": [
+        "list_orders"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您名下目前有 5 笔订单：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 2002 | 自动饮水机 | 待付款 | ¥1557 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n| 1137 | 猫粮 5kg | 待付款 | ¥1320 |\n\n其中 3 笔还是待付款状态（2002、6796、1137），如果需要，可以尽快完成支付；8659 已签收，1001 已付款。\n\n需要我帮您查某一单的物流、保修或退货进度吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-006",
+      "kind": "single",
+      "question": "订单号 2002 帮我查一下",
+      "passed": true,
+      "expected_tools": [
+        "query_order"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，帮您查到订单 **2002** 的信息如下：\n\n| 项目 | 内容 |\n|---|---|\n| 订单号 | 2002 |\n| 商品 | 自动饮水机 |\n| 订单金额 | 1557 元 |\n| 下单时间 | 2026-07-07 10:00 |\n| 订单状态 | **待付款** |\n| 物流单号 | SF970058539216 |\n\n目前这笔订单还处于**待付款**状态，建议您尽快在订单页完成支付，以免超时取消。由于尚未付款，包裹暂未发出，物流信息要等付款发货后才会更新哦～\n\n请问还需要我帮您查其他订单或商品吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-007",
+      "kind": "single",
+      "question": "猫砂盆有几个型号",
+      "passed": true,
+      "expected_tools": [
+        "list_products"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我们目前有 **3 个型号**的智能猫砂盆，主要区别如下：\n\n**1. 智能猫砂盆 Lite（型号 MH-LP50）**[1]\n- 适用猫咪体重：1.5kg 至 6kg\n- 猫砂容量 6L，废砂盒约可用 5 天（单猫）\n- 自动感应清理、物理除臭盖板；**不含 App 联网功能**，不支持满溢推送提醒，建议每 4 至 5 天倾倒一次废砂盒\n- 价格更低，适合单猫家庭\n\n**2. 智能猫砂盆 Pro（型号 MH-LP100）**[2]\n- 适用猫咪体重：1.5kg 至 8kg\n- 猫砂容量 9L，废砂盒约可用 7 天（单猫）\n- 自动感应清理、活性炭除臭、App 远程监控与健康记录\n- 废砂盒满时 App 推送提醒，建议每 5 至 7 天倾倒一次（单猫）；两只猫建议每 3 至 4 天倾倒一次\n\n**3. 智能猫砂盆 Max（型号 MH-LP200）**[10]\n- 适用猫咪体重：2kg 至 12kg，适合大型猫与多猫家庭\n- 猫砂容量 12L，废砂盒约可用 10 天（单猫）\n- 超大滚筒、双重称重防夹、活性炭除臭、App 多猫健康档案\n- 废砂盒满时 App 推送提醒，多猫家庭建议每 3 至 5 天倾倒一次\n\n简单来说：单猫、预算优先选 Lite；想要 App 监控选 Pro；大型猫或多猫家庭选 Max。您可以到商品页查看详情并自行下单，需要我帮您对比某一项参数也可以告诉我～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-008",
+      "kind": "single",
+      "question": "逗猫棒多少钱",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "您好~ 我们有一款「羽毛逗猫棒」：\n\n- 价格：**29 元**\n- 规格：含替换头 3 个\n- 库存：充足（188 件在售）\n- 特点：弹性杆设计，使用时建议有人看护哦\n\n如果喜欢，可以到商品页或商城直接下单~ 需要我帮您看看其他玩具吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-009",
+      "kind": "single",
+      "question": "自动饮水机噪音大吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-010",
+      "kind": "single",
+      "question": "我要退款",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-011",
+      "kind": "single",
+      "question": "退货地址发我",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-012",
+      "kind": "single",
+      "question": "退款的钱去哪了",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-013",
+      "kind": "single",
+      "question": "猫砂盆坏了怎么修",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-014",
+      "kind": "single",
+      "question": "喂食器卡粮了",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "喂食器卡粮可以先按这几步自查[1]:\n\n1. **看粮食颗粒**:检查粮粒直径是否超过 **12mm**,颗粒过大容易卡在出粮口[1]。\n2. **看粮桶是否受潮**:受潮结块也会导致下粮不畅,建议清理结块、保持粮桶干燥[1]。\n3. **清理出粮口**:断电后把出粮口处卡住的粮食清理干净,再重新通电试一次[1]。\n\n如果清理后仍然卡粮,或者您想确认具体型号的粮桶容量、结构,可以告诉我您的喂食器型号(比如基础版 MH-FD10、摄像头版 MH-FD30),我帮您对照规格看看~ 需要的话也可以帮您转售后进一步处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-015",
+      "kind": "single",
+      "question": "维修要寄到哪里",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-016",
+      "kind": "single",
+      "question": "我要投诉客服",
       "passed": true,
       "expected_tools": [],
       "actual_tools": [],
       "expected_actions": [
-        "transfer_human",
-        "create_ticket"
+        "transfer_human"
       ],
       "actual_actions": [
         "transfer_human",
@@ -142,14 +560,136 @@
       "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
       "checks": {
         "tools": true,
+        "tool_order": true,
+        "tool_result": true,
         "actions": true,
         "product_found": true,
-        "answer": true
+        "answer_nonempty": true,
+        "order_scope": true
       }
     },
     {
-      "id": "A07",
-      "question": "今天天气怎么样",
+      "id": "AGT-017",
+      "kind": "single",
+      "question": "等了半个月没人理",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-018",
+      "kind": "single",
+      "question": "下次再也不来了要举报",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-019",
+      "kind": "single",
+      "question": "帮我建个工单",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "好的,我来帮您建工单~ 不过还需要先了解一些信息:\n\n1. **您遇到了什么问题?** 请简单描述一下(比如:商品破损、物流异常、退款没到账等)\n2. **工单类型** 您希望是「售后」「投诉」还是「咨询」?\n3. 如果有相关**订单号**,也请一并告诉我,方便定位问题。\n\n您把情况说清楚,我马上帮您提交~",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-020",
+      "kind": "single",
+      "question": "我要找真人客服",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "好的,我来帮您转接人工客服 🙂 不过为了让人工同事能快速帮您处理,还需要先了解一下您遇到的具体问题。\n\n方便告诉我:\n1. 您想咨询或反馈的是什么事情?(比如订单、退款、物流、商品等)\n2. 如果涉及具体订单,可以提供一下订单号。\n\n您说明后,我就为您创建人工工单跟进。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-021",
+      "kind": "single",
+      "question": "人工客服在哪",
+      "passed": false,
+      "expected_tools": [],
+      "actual_tools": [
+        "query_faq"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我是小喵～ 转接人工客服的入口有两个：\n\n- 在「喵喵优选」App 里，进入「我的」-「联系客服」[1]\n- 或者在订单详情页，点击「订单售后 / 联系客服」[1]\n\n人工客服的服务时间是每日 9:00 至 22:00，高峰期可能需要稍等，也可以留言等待回复[1]。转接时请按页面指引准备好订单号、开箱视频或商品照片等凭证，这样处理会更快[1]。\n\n另外，如果您是金卡会员，可以享受优先客服接入[7]。如果您现在有具体的售后问题，也可以先告诉我，我帮您查一下订单或物流情况～",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-022",
+      "kind": "single",
+      "question": "你好呀",
       "passed": true,
       "expected_tools": [],
       "actual_tools": [],
@@ -160,10 +700,3557 @@
       "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
       "checks": {
         "tools": true,
+        "tool_order": true,
+        "tool_result": true,
         "actions": true,
         "product_found": true,
-        "answer": true
+        "answer_nonempty": true,
+        "order_scope": true
       }
+    },
+    {
+      "id": "AGT-023",
+      "kind": "single",
+      "question": "今天天气不错",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-024",
+      "kind": "single",
+      "question": "你叫什么名字",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-025",
+      "kind": "single",
+      "question": "帮我写一段 Python 代码",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-026",
+      "kind": "single",
+      "question": "1+1 等于几",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-027",
+      "kind": "single",
+      "question": "明天股市会涨吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-028",
+      "kind": "single",
+      "question": "看看你们的猫粮有哪些",
+      "passed": true,
+      "expected_tools": [
+        "list_products"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-029",
+      "kind": "single",
+      "question": "有卖猫砂盆吗",
+      "passed": true,
+      "expected_tools": [
+        "list_products"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "有的，我们目前有 3 款智能猫砂盆在售，库存都充足：\n\n| 商品 | 价格 | 容量/适用 | 特点 | 库存 |\n|---|---|---|---|---|\n| 智能猫砂盆 Lite | ¥1099 | 6L，1.5–6kg 猫咪 | 自动清理、物理除臭，无 App 联网 | 45 |\n| 智能猫砂盆 Pro | ¥1739 | 9L，1.5–8kg 猫咪 | 自动清理、活性炭除臭，支持 App 健康记录 | 28 |\n| 智能猫砂盆 Max | ¥2399 | 12L，大型猫/多猫家庭 | 双重称重防夹、App 多猫健康档案 | 12 |\n\n如果家里是单只普通体型的猫，Lite 就够用；想要 App 记录和更好除臭可以选 Pro；多猫或大型猫建议 Max。您可以直接到商品页或商城下单，需要我帮您对比哪一款更合适吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-030",
+      "kind": "single",
+      "question": "你们的喂食器多少钱",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "我们目前在售两款自动喂食器：\n\n| 商品 | 规格 | 价格 | 库存 |\n|---|---|---|---|\n| 自动喂食器（MH-FD10） | 3L，双电源 | ¥329 | 86 件 |\n| 自动喂食器摄像头版（MH-FD30） | 4L，1080P 摄像头 | ¥599 | 34 件 |\n\n- 基础款支持定时定量喂食和缺粮提醒；\n- 摄像头版支持视频回看和双向语音，需要连接 2.4G Wi-Fi。\n\n两款都有现货，您可以直接到商品页或商城下单～ 需要我帮您对比一下哪款更适合吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-031",
+      "kind": "single",
+      "question": "猫窝有现货吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "有现货的～\n\n**四季保暖猫窝**（SKU：MH-NEST20）\n- 价格：89 元\n- 库存：67 件，现货可发\n- 规格：直径 50cm，适合 8kg 内的猫咪\n- 洗护提示：外套可手洗，内部垫芯不可机洗\n\n需要的话可以直接去商品页下单哦～ 还有其他想了解的（比如尺寸是否合适）也可以问我。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-032",
+      "kind": "single",
+      "question": "猫爬架还有库存吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "有货的～「大型猫爬架」（SKU：MH-CT30）目前库存 **23 件**，售价 **459 元**。\n\n- 规格：高 1.6m，四层剑麻抓柱\n- 说明：含顶层吊床，单层承重 10kg，需自行组装\n\n需要的话可以直接去商品页下单哦，库存以页面实时显示为准～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-033",
+      "kind": "single",
+      "question": "订单 2002 买了什么",
+      "passed": true,
+      "expected_tools": [
+        "query_order"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "订单 2002 的详情如下:\n\n- **商品**:自动饮水机\n- **订单状态**:待付款\n- **订单金额**:1557 元\n- **下单时间**:2026-07-07 10:00\n- **物流单号**:SF970058539216\n\n这笔订单目前还是**待付款**状态,建议您尽快完成支付,以免订单超时关闭哦~ 需要我帮您查其他信息吗?",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-034",
+      "kind": "single",
+      "question": "查一下 1001 这单",
+      "passed": true,
+      "expected_tools": [
+        "query_order"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "已为您查到订单 **1001** 的信息：\n\n| 项目 | 内容 |\n|---|---|\n| 商品 | 智能猫砂盆 |\n| 订单状态 | 已付款 |\n| 订单金额 | ¥1739 |\n| 下单时间 | 2026-07-04 10:00 |\n| 物流单号 | SF213502378238 |\n\n目前该单状态为「已付款」。需要我帮您查一下这个物流单号的实时轨迹吗？或者您想了解退换货、保修等其他方面，也可以告诉我～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-035",
+      "kind": "single",
+      "question": "我要查看历史订单",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "list_orders"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "这是您名下的历史订单，共 5 笔：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 2002 | 自动饮水机 | 待付款 | ¥1557 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n| 1137 | 猫粮 5kg | 待付款 | ¥1320 |\n\n需要我帮您查某一笔的物流、保修或退货进度吗？告诉我订单号就好～",
+      "checks": {
+        "tools": false,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-036",
+      "kind": "single",
+      "question": "订单 1001 用的是什么支付方式",
+      "passed": true,
+      "expected_tools": [
+        "query_order"
+      ],
+      "actual_tools": [
+        "query_order"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我帮您查了订单 1001 的信息：\n\n- 商品：智能猫砂盆\n- 状态：已付款\n- 金额：1739 元\n- 下单时间：2026-07-04 10:00\n- 物流单号：SF213502378238\n\n不过，目前系统返回的订单信息里**没有包含支付方式**这一项，所以我这边查不到具体是用哪种方式支付的，不能凭空猜测。\n\n建议您这样确认：\n1. 在「我的订单」里点开该订单详情页，通常会显示支付方式；\n2. 或查看支付时使用的账户（微信/支付宝/银行卡）的扣款记录。\n\n如果订单详情页也看不到，需要人工帮您核实，可以告诉我，我为您登记工单跟进～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-037",
+      "kind": "single",
+      "question": "这单快递单号多少",
+      "passed": false,
+      "expected_tools": [],
+      "actual_tools": [
+        "list_orders",
+        "query_order",
+        "query_order"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，您名下有多个订单，请问您问的是哪一单？目前有物流单号的是这两单：\n\n- 订单 1001（智能猫砂盆，已付款，1739 元）：物流单号 SF213502378238\n- 订单 8659（智能猫砂盆，已签收，556 元）：物流单号 SF241565447350\n\n其余订单（2002、6796、1137）目前是待付款状态，还没有物流单号。您告诉我是哪一单，我可以帮您查物流进度～",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-038",
+      "kind": "single",
+      "question": "SF123456 签收了吗",
+      "passed": false,
+      "expected_tools": [],
+      "actual_tools": [
+        "list_orders",
+        "query_logistics",
+        "query_order",
+        "query_order",
+        "query_order",
+        "query_order",
+        "query_order"
+      ],
+      "expected_actions": [],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我帮您查了一下：\n\n**物流单号 SF123456** 目前状态是「**已揽件**」，最新轨迹为「广州分拨中心 已发出」，**还没有签收**哦。\n\n不过要提醒您一点：这个单号**没有关联到您名下的任何订单**。您名下订单对应的物流单号分别是：\n\n| 订单号 | 商品 | 状态 | 物流单号 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | SF213502378238 |\n| 2002 | 自动饮水机 | 待付款 | SF970058539216 |\n| 8659 | 智能猫砂盆 | 已签收 | SF241565447350 |\n| 6796 | 智能猫砂盆 | 待付款 | SF146677055838 |\n| 1137 | 猫粮 5kg | 待付款 | SF428402420433 |\n\n所以麻烦您核对一下单号是否记错了～ 如果 SF123456 是别人帮您寄的或另有来源，建议直接联系快递公司核实；如果是您自己的订单，请告诉我订单号，我再帮您查具体物流进度。",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-039",
+      "kind": "single",
+      "question": "包裹今天能到吗",
+      "passed": true,
+      "expected_tools": [
+        "list_orders",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "list_orders",
+        "query_order",
+        "query_logistics"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我帮您查了一下～\n\n您名下目前有 5 笔订单，其中**已付款、正在运输中**的是：\n\n- 订单 **1001**（智能猫砂盆，¥1739）\n- 物流单号：SF213502378238\n- 当前状态：**已揽件**，包裹在**成都**，轨迹显示「成都分拨中心 已发出」\n\n另外订单 **8659**（智能猫砂盆）状态为**已签收**，应该已经送到啦。\n\n关于「今天能不能到」：包裹目前刚揽件、还在成都分拨中心，具体派送和到达时间要以快递实际配送为准，我这边没办法承诺准确的到货时间哦。建议您留意快递员的派送通知，或用单号 SF213502378238 在顺丰官方渠道查看实时轨迹。\n\n如果您想查的是其他订单（比如 2002、6796、1137 目前都是**待付款**状态，还未发货），可以告诉我具体订单号，我再帮您确认～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-040",
+      "kind": "single",
+      "question": "快递在哪个分拨中心",
+      "passed": true,
+      "expected_tools": [
+        "list_orders",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "list_orders",
+        "query_order",
+        "query_order",
+        "query_logistics",
+        "query_logistics"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您名下有物流单号的订单有两笔，分拨中心信息如下：\n\n| 订单号 | 商品 | 物流单号 | 当前状态 | 所在分拨中心 |\n|---|---|---|---|---|\n| 1001 | 智能猫砂盆 | SF213502378238 | 已揽件 | **成都分拨中心**（已发出） |\n| 8659 | 智能猫砂盆 | SF241565447350 | 已揽件 | **杭州分拨中心**（已发出） |\n\n另外提醒一下：订单 8659 在订单列表里显示为「已签收」，但物流轨迹目前只到「已揽件」，两边信息不太一致。如果您关注的是这一单，建议您核对一下收货情况，需要的话我可以帮您转人工核实。\n\n请问您想查的是哪一单呢？告诉我订单号，我可以再帮您看更详细的轨迹~",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-041",
+      "kind": "single",
+      "question": "我要退货",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-042",
+      "kind": "single",
+      "question": "退款多久到账",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "关于退款到账时间,给您说明一下:\n\n- 退货商品经平台核验通过后,退款会**原路退回**,到账时效以平台售后规则为准[1]。\n- 平台**不承诺具体到账天数**,实际到账时间取决于您的支付渠道(如银行卡、第三方支付等)[1]。\n- 另外,退款类问题的平台处理时限为:首次响应 2 小时、处理时限 3 个工作日[5]——这是平台内部处理的时间,不等于款项到账时间,两者请区分开。\n\n如果您想确认某一单的退货/退款进行到哪一步了,可以把订单号告诉我,我帮您查一下退货进度~",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-043",
+      "kind": "single",
+      "question": "能申请退回运费吗",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-044",
+      "kind": "single",
+      "question": "换货要多久",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "换货的时效大致如下：\n\n- **首次响应**：2 小时内[2]\n- **处理时限**：5 个工作日[2]\n\n流程是：收到商品 7 天内可申请换货，联系客服登记后将商品寄回，平台核验无误后补发新品[1]。另外，换货需商品完好、配件齐全，可申请一次同款换货；若想换不同型号或颜色，需先退货再重新下单[10]。\n\n补发新品的具体到货时间取决于物流，无法为您承诺确切日期，建议以物流轨迹为准。需要我帮您查某笔订单的换货/物流进度吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-045",
+      "kind": "single",
+      "question": "保修期内坏了怎么换",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-046",
+      "kind": "single",
+      "question": "维修进度怎么查",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-047",
+      "kind": "single",
+      "question": "这服务太差我要投诉",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-048",
+      "kind": "single",
+      "question": "我要投诉售后",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-049",
+      "kind": "single",
+      "question": "我要投诉物流",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-050",
+      "kind": "single",
+      "question": "客服态度太差",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-051",
+      "kind": "single",
+      "question": "能帮我转人工吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "当然可以帮您转接人工～不过为了让人工同事能快速接手，麻烦您先简单说明一下遇到的问题，比如：\n\n- 是哪个订单（订单号）出了什么问题？\n- 具体是物流、退款退货、商品咨询，还是其他情况？\n\n您把情况说一下，我这边先帮您核实；如果确实需要人工跟进，我会为您创建工单并提交给您确认。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-052",
+      "kind": "single",
+      "question": "给我登记一个问题",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "好的，我来帮您登记工单。为了准确记录，麻烦您补充两点信息：\n\n1. **具体问题描述**：您遇到的是什么情况？（比如：某笔订单的售后问题、商品咨询、服务投诉等，尽量说清楚订单号或商品名称）\n2. **工单类型**：属于「售后」「投诉」还是「咨询」？\n\n您提供后我就为您提交，提交前系统会把工单内容给您确认。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-053",
+      "kind": "single",
+      "question": "麻烦找客服联系我",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我是小喵～很高兴为您服务。为了帮您把问题准确转给人工客服，方便先了解一下您遇到的具体情况吗？比如：\n\n- 是哪个订单（订单号）或哪件商品的问题？\n- 具体是什么情况（物流、退换货、商品质量、价格等）？\n\n您简单描述一下，我就帮您登记工单转交人工跟进～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-054",
+      "kind": "single",
+      "question": "早上好呀",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-055",
+      "kind": "single",
+      "question": "陪我聊会天",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-056",
+      "kind": "single",
+      "question": "翻译一句英文",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-057",
+      "kind": "single",
+      "question": "推荐一部电影",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-058",
+      "kind": "single",
+      "question": "帮我订一张机票",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-059",
+      "kind": "single",
+      "question": "给我讲讲历史",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-060",
+      "kind": "single",
+      "question": "帮我把这段代码改一下",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-061",
+      "kind": "single",
+      "question": "猫咪拉肚子吃什么药",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-062",
+      "kind": "single",
+      "question": "明天有什么新闻",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-063",
+      "kind": "single",
+      "question": "我下周要去面试",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-064",
+      "kind": "single",
+      "question": "你们好像不是很专业",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-065",
+      "kind": "single",
+      "question": "这东西用起来真糟心",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-066",
+      "kind": "single",
+      "question": "退个货怎么这么费劲",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-067",
+      "kind": "single",
+      "question": "退款一直没到",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-068",
+      "kind": "single",
+      "question": "这个月能开票吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-069",
+      "kind": "single",
+      "question": "猫砂盆有异味怎么处理",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-070",
+      "kind": "single",
+      "question": "喂食器灯一直闪",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-071",
+      "kind": "single",
+      "question": "摄像头画面卡顿",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-072",
+      "kind": "single",
+      "question": "饮水机声音很大正常吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-073",
+      "kind": "single",
+      "question": "猫窝掉毛严重吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-074",
+      "kind": "single",
+      "question": "猫砂盆噪音大吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-075",
+      "kind": "single",
+      "question": "加热垫安全吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "关于加热垫的安全性，我们目前在售的两款都做了专门的安全设计，可以放心使用，但也要注意使用方式：\n\n**恒温加热垫（型号 MH-HP12）**[1]\n- 恒温 38℃，内置过热保护\n- 防水、防抓咬电线套管\n- 建议连续通电不超过 12 小时\n- 尺寸 40cm × 30cm，适合幼猫、老年猫及冬季保暖\n\n**大号三档加热垫（型号 MH-HP20）**[10]\n- 三档可调 30℃ / 38℃ / 45℃，内置过热保护与定时关机\n- 防水防抓咬电线套管，表面绒布可拆洗\n- 尺寸 60cm × 45cm，适合大型猫、多猫窝\n\n**安全使用小提示**\n- 两款都有过热保护，但建议不要让宠物长时间连续通电，MH-HP12 连续通电不超过 12 小时为宜[1]；MH-HP20 有定时关机功能，可以配合使用[10]。\n- 电线有防抓咬套管，但仍建议把线缆收在宠物不易啃咬的位置。\n- 表面绒布可拆洗的款式，清洗时请先断电并取下电源部分[10]。\n\n**保修方面**：电子类商品自签收日起保修 12 个月，保修期内非人为损坏可申请免费维修或换货；人为损坏不在保修范围[2][4]。\n\n如果您想了解具体价格或库存，可以告诉我型号，我帮您查一下～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-076",
+      "kind": "single",
+      "question": "猫爬架适合大猫吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "适合的～我们这款**大型猫爬架(型号 MH-CT30)**就是为大猫设计的:\n\n- **高度 1.6m,共四层,带顶层吊床**,大猫也能舒展身体、趴卧休息[1]\n- **单层最大承重 10kg**,体型较大的猫咪上去也稳当[1]\n- 材质为**剑麻柱身 + 绒布平台**,抓挠和趴卧都合适[1]\n- 需自行组装,随附六角扳手与图解说明书[1][10]\n\n目前售价 **459 元**,库存 23 件,有货。如果猫咪体重接近或超过 10kg,建议留意单层承重上限,可以让它主要在低层活动。\n\n想入手的话,可以直接在商品页或商城下单哦～需要我帮您看看别的猫咪家具吗?",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-077",
+      "kind": "single",
+      "question": "猫包能装两只猫吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-078",
+      "kind": "single",
+      "question": "航空箱能带上飞机吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-079",
+      "kind": "single",
+      "question": "指甲剪好用吗",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-080",
+      "kind": "single",
+      "question": "冻干猫零食多少钱",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [
+        "query_product",
+        "list_products"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": false,
+      "answer": "目前商品目录里没有名为「冻干猫零食」的商品，不过有一款相近的冻干零食在售：\n\n- **冻干鸡胸肉 200g**（SKU：FD-SNACK-20）\n  - 价格：**59 元**\n  - 规格：200g 原切冻干\n  - 库存：120 件，有货\n  - 说明：可作零食或复水喂食，开封后密封保存\n\n如果这款合适，可以到商品页或商城直接下单～需要我帮您看看其他宠物食品（猫粮、主食罐头）吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-081",
+      "kind": "single",
+      "question": "猫罐头怎么保存",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-082",
+      "kind": "single",
+      "question": "混合猫砂怎么选",
+      "passed": true,
+      "expected_tools": [
+        "query_product"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-083",
+      "kind": "single",
+      "question": "猫砂盆需要配砂吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-084",
+      "kind": "single",
+      "question": "猫粮吃完了想补货",
+      "passed": false,
+      "expected_tools": [
+        "list_products",
+        "list_orders"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": false,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-085",
+      "kind": "single",
+      "question": "能不能送到小区门口",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-086",
+      "kind": "single",
+      "question": "能指定晚上送货吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-087",
+      "kind": "single",
+      "question": "周末会派送吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-088",
+      "kind": "single",
+      "question": "能改收货电话吗",
+      "passed": false,
+      "expected_tools": [],
+      "actual_tools": [
+        "query_faq",
+        "query_faq"
+      ],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-089",
+      "kind": "single",
+      "question": "订单地址填错了",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "list_products"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": false,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-090",
+      "kind": "single",
+      "question": "订错数量了怎么改",
+      "passed": false,
+      "expected_tools": [],
+      "actual_tools": [
+        "list_orders"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "关于修改订单数量，平台规则是这样的：**商品数量无法直接修改，需要先取消原订单再重新下单**[1]。\n\n具体操作分几种情况：\n\n- **未发货的订单**：可以在「我的订单」里自助取消，然后按正确数量重新下单[1]。\n- **已发货的订单**：无法修改收货信息，可以拒收后走退款流程[1]。\n- **已签收的订单**：已经无法取消或改数量了，如果确实买多了，可以按售后流程申请退货退款（在「我的订单」找到该订单点击「申请退款」提交[4]）。\n\n我看了下您名下的订单，目前有这些：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | 1739 |\n| 2002 | 自动饮水机 | 待付款 | 1557 |\n| 8659 | 智能猫砂盆 | 已签收 | 556 |\n| 6796 | 智能猫砂盆 | 待付款 | 1841 |\n| 1137 | 猫粮 5kg | 待付款 | 1320 |\n\n请问您是想改哪一单的数量呢？如果是待付款的订单（2002 / 6796 / 1137），直接取消后重新下单最方便；如果是 1001 已付款的，需要先确认是否已发货。您告诉我订单号，我帮您看看具体状态～",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-091",
+      "kind": "single",
+      "question": "帮我取消这个订单",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-092",
+      "kind": "single",
+      "question": "下单后多久发货",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，关于发货时间，小喵为您说明：\n\n- **现货商品**：付款后 **48 小时内发货**[1]。\n- **预售商品**：以商品详情页标注的发货时间为准[1][2]。\n\n另外提醒一下，偏远地区（新疆、西藏、内蒙古部分区域）的配送时效会在正常时效基础上顺延 2 至 4 天[3]。\n\n如果您想查询某一笔订单的具体发货情况，可以把订单号告诉我，我帮您查一下～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-093",
+      "kind": "single",
+      "question": "可以合并两笔订单吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-094",
+      "kind": "single",
+      "question": "能拆开发货吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-095",
+      "kind": "single",
+      "question": "退货需要原包装吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-096",
+      "kind": "single",
+      "question": "退款到哪个账户",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-097",
+      "kind": "single",
+      "question": "我先不退了",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-098",
+      "kind": "single",
+      "question": "收到的东西有瑕疵",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-099",
+      "kind": "single",
+      "question": "收到的东西少了配件",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-100",
+      "kind": "single",
+      "question": "收到的东西发错货了",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-101",
+      "kind": "single",
+      "question": "保修需要发票吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-102",
+      "kind": "single",
+      "question": "寄修地址是什么",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-103",
+      "kind": "single",
+      "question": "上门维修可以吗",
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": null,
+      "answers": [
+        ""
+      ]
+    },
+    {
+      "id": "AGT-104",
+      "kind": "single",
+      "question": "投诉后多久回复",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "关于投诉的响应时效，平台规则如下：\n\n- **首次响应：1 小时内**\n- **处理时限：3 个工作日内**[1]\n\n如果您需要跟进具体投诉，可以在「喵喵优选」App 内通过「我的」-「联系客服」，或订单详情页的「订单售后 / 联系客服」入口转接在线人工客服；人工客服服务时间为每日 9:00 至 22:00，高峰期请耐心等待或留言[6]。\n\n需要我帮您查询某个订单的情况，或者帮您登记人工工单吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-105",
+      "kind": "single",
+      "question": "我已经投诉两次了",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-106",
+      "kind": "single",
+      "question": "我要找你们上级",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我是智能客服小喵～很理解您想找人工同事处理。为了帮您把问题准确转达给上级/人工客服，方便先了解一下：\n\n1. 您遇到的具体问题是什么？（比如订单、退款、物流、商品等）\n2. 涉及哪个订单号或商品？\n\n您把情况告诉我，能直接解决的我会马上帮您查；如果需要人工跟进，我会为您创建工单转交人工同事处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-107",
+      "kind": "single",
+      "question": "我要给差评",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human",
+        "create_ticket"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-108",
+      "kind": "single",
+      "question": "能不能找个人来解决问题",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "当然可以帮您转接人工跟进～不过为了让人工同事能直接处理，我需要先了解清楚情况，麻烦您补充两点：\n\n1. **您遇到的具体问题是什么**？（比如某个订单的物流、退款、商品咨询等，尽量描述一下具体情况）\n2. **涉及哪个订单号或商品**？（如果有的话）\n\n您把情况说清楚，我就帮您提交人工工单，让专人跟进处理。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-109",
+      "kind": "single",
+      "question": "帮我转人工服务",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "好的，我来帮您转接人工客服。为了让人工同事能快速帮您处理，方便先告诉我一下您遇到的具体问题吗？比如：\n\n- 是订单相关（订单号、物流、退款/退货等）\n- 还是商品咨询（价格、库存、规格等）\n- 或者其他问题\n\n您简单描述一下，我就帮您提交人工工单跟进～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-110",
+      "kind": "single",
+      "question": "在吗,有人吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-111",
+      "kind": "single",
+      "question": "我打电话没人接",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-112",
+      "kind": "single",
+      "question": "晚上好",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-113",
+      "kind": "single",
+      "question": "今天心情不错",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-114",
+      "kind": "single",
+      "question": "你几岁了",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-115",
+      "kind": "single",
+      "question": "哈哈哈笑死",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-116",
+      "kind": "single",
+      "question": "帮我算一下 12 乘 8",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-117",
+      "kind": "single",
+      "question": "推荐几本书",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-118",
+      "kind": "single",
+      "question": "写一首诗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-119",
+      "kind": "single",
+      "question": "明天会下雨吗",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-120",
+      "kind": "single",
+      "question": "附近有什么好吃的",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-121",
+      "kind": "single",
+      "question": "帮我查个单词",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-122",
+      "kind": "single",
+      "question": "讲个笑话吧",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-123",
+      "kind": "single",
+      "question": "我想学英语",
+      "passed": true,
+      "expected_tools": [],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-124",
+      "kind": "toolchain",
+      "question": "我的订单和其中一单的物流",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "query_logistics"
+      ],
+      "actual_tools": [],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我是小喵～已经帮您查到名下订单，共 5 笔：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 2002 | 自动饮水机 | 待付款 | ¥1557 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n| 1137 | 猫粮 5kg | 待付款 | ¥1320 |\n\n关于物流，您想查哪一单呢？告诉我订单号就行（比如已签收的 8659，或已付款的 1001），我马上帮您查物流轨迹～",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": false,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-125",
+      "kind": "toolchain",
+      "question": "查看我的订单再查 1001 物流",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "query_order",
+        "query_logistics"
+      ],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，已为您查到以下信息～\n\n**您的订单（共 5 笔）**\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 2002 | 自动饮水机 | 待付款 | ¥1557 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n| 1137 | 猫粮 5kg | 待付款 | ¥1320 |\n\n**订单 1001 物流**\n- 商品：智能猫砂盆，已付款，下单时间 2026-07-04 10:00\n- 物流单号：SF213502378238\n- 当前状态：已揽件，包裹在**成都**\n- 轨迹：成都分拨中心 已发出\n\n包裹刚被揽收，后续运输进展您可以凭单号持续关注。另外提醒一下，订单 2002、6796、1137 目前还是待付款状态，如需保留请及时完成支付哦～还有其他需要帮忙的吗？",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": false
+      }
+    },
+    {
+      "id": "AGT-126",
+      "kind": "toolchain",
+      "question": "我的订单里 2002 是什么状态",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "query_order"
+      ],
+      "actual_tools": [],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您的订单 **2002** 情况如下：\n\n- 商品：自动饮水机\n- 状态：**待付款**\n- 金额：1557 元\n\n这笔订单还没有完成支付，建议您尽快在「我的订单」里完成付款，以免超时后订单被取消。需要我帮您看看其他订单或物流情况吗？",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": false,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-127",
+      "kind": "toolchain",
+      "question": "我的订单 1001 花了多少钱",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "query_order"
+      ],
+      "actual_tools": [],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您的订单 **1001** 详情如下:\n\n- 商品:智能猫砂盆\n- 订单金额:**1739 元**\n- 订单状态:已付款\n\n如需查看物流进度或申请售后,随时告诉我~",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": false,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-128",
+      "kind": "toolchain",
+      "question": "我买了哪些猫砂盆",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "query_product"
+      ],
+      "actual_tools": [
+        "list_orders"
+      ],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您名下与猫砂盆相关的订单共有 3 笔：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n\n另外您还有两笔其他商品的订单：2002 自动饮水机（待付款，¥1557）、1137 猫粮 5kg（待付款，¥1320）。\n\n需要我帮您查其中某一单的物流、保修或退货进度吗？",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": false,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-129",
+      "kind": "toolchain",
+      "question": "看看我的订单里有这款玩具吗",
+      "passed": false,
+      "expected_tools": [
+        "list_products",
+        "list_orders"
+      ],
+      "actual_tools": [
+        "list_products"
+      ],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "我帮您核对了一下，您名下目前这 5 笔订单里**没有玩具类商品**：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | 1739 元 |\n| 2002 | 自动饮水机 | 待付款 | 1557 元 |\n| 8659 | 智能猫砂盆 | 已签收 | 556 元 |\n| 6796 | 智能猫砂盆 | 待付款 | 1841 元 |\n| 1137 | 猫粮 5kg | 待付款 | 1320 元 |\n\n另外，您说的「这款玩具」具体是哪一款呢？目前店铺在售的玩具有两款：\n\n- **羽毛逗猫棒**：29 元，含替换头 3 个，弹性杆设计，使用时需有人看护，库存充足\n- **智能滚动球**：79 元，USB-C 充电，三档运行模式，遇阻自动转向，库存充足\n\n如果您想买玩具，可以直接去商品页或商城下单；也可以告诉我具体是哪一款，我再帮您确认价格和库存～",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": false
+      }
+    },
+    {
+      "id": "AGT-130",
+      "kind": "toolchain",
+      "question": "你们卖什么,订单 1001 到哪了",
+      "passed": true,
+      "expected_tools": [
+        "list_products",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "list_products",
+        "query_logistics"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，我是小喵～ 两件事都帮您查好了：\n\n**1. 我们卖什么**\n店铺主营宠物智能用品与日常用品，共 9 个品类：智能清洁、智能喂养、智能看护、宠物食品、清洁用品、猫咪家具、出行用品、玩具、护理用品。部分热门商品：\n\n| 品类 | 商品 | 价格 | 库存 |\n|---|---|---|---|\n| 智能清洁 | 智能猫砂盆 Pro（9L） | ¥1739 | 28 |\n| 智能清洁 | 智能猫砂盆 Lite（6L） | ¥1099 | 45 |\n| 智能清洁 | 智能猫砂盆 Max（12L） | ¥2399 | 12 |\n| 智能喂养 | 自动喂食器（3L） | ¥329 | 86 |\n| 智能喂养 | 自动饮水机（2L） | ¥199 | 63 |\n| 智能看护 | 全景看护摄像头（2K） | ¥399 | 19 |\n| 宠物食品 | 全价猫粮 5kg | ¥189 | 142 |\n| 宠物食品 | 幼猫粮 2kg | ¥119 | 74 |\n| 清洁用品 | 豆腐猫砂 6L | ¥32 | 210 |\n| 猫咪家具 | 大型猫爬架（1.6m） | ¥459 | 23 |\n\n另外，宠物定位器（¥299）目前缺货，可以订阅到货提醒。想看某个品类的完整清单，告诉我品类名就行～\n\n**2. 订单 1001 的物流**\n- 商品：智能猫砂盆，金额 ¥1739，下单时间 2026-07-04 10:00，订单状态：已付款\n- 物流单号：SF213502378238\n- 当前状态：**已揽件**，最新轨迹为「成都分拨中心 已发出」\n\n具体送达时间以快递实际派送为准，建议您留意物流更新。需要我帮您查其他订单或商品详情吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-131",
+      "kind": "toolchain",
+      "question": "所有猫粮和猫砂盆都列出来",
+      "passed": false,
+      "expected_tools": [
+        "list_products"
+      ],
+      "actual_tools": [],
+      "expected_actions": [],
+      "actual_actions": [
+        "transfer_human"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": false,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-132",
+      "kind": "toolchain",
+      "question": "有什么玩具,顺便查 1001 物流",
+      "passed": true,
+      "expected_tools": [
+        "list_products",
+        "query_logistics"
+      ],
+      "actual_tools": [
+        "list_products",
+        "query_logistics"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，两件事都帮您查好了～\n\n**🐾 玩具类（当前在售 2 款）**\n| 商品 | 价格 | 库存 | 规格 |\n|---|---|---|---|\n| 羽毛逗猫棒 | ¥29 | 188 件 | 替换头 3 个（弹性杆设计，使用时需有人看护） |\n| 智能滚动球 | ¥79 | 77 件 | USB-C 充电（三档运行模式，遇阻自动转向） |\n\n喜欢的话可以到商品页或商城直接下单哦～\n\n**📦 订单 1001 物流**\n- 商品：智能猫砂盆（¥1739，2026-07-04 下单，订单状态：已付款）\n- 物流单号：SF213502378238\n- 当前状态：**已揽件**，位置在成都\n- 轨迹：成都分拨中心 已发出\n\n包裹刚被揽收，后续运输进度您可以随时来问我～",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-133",
+      "kind": "toolchain",
+      "question": "查订单 1001 物流后推荐同类玩具",
+      "passed": true,
+      "expected_tools": [
+        "query_logistics",
+        "list_products"
+      ],
+      "actual_tools": [
+        "query_logistics",
+        "list_products"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "已为您查到订单 **1001**（智能猫砂盆，金额 1739 元，下单时间 2026-07-04 10:00）的物流情况：\n\n**物流单号：SF213502378238**\n- 当前状态：已揽件\n- 当前位置：成都（成都分拨中心已发出）\n\n包裹已从成都分拨中心发出，后续轨迹更新后可以再问我查询～\n\n关于玩具，目前店铺在售的玩具类商品有这两款：\n\n| 商品 | 价格 | 库存 | 规格/特点 |\n|---|---|---|---|\n| 羽毛逗猫棒 | 29 元 | 188 件 | 替换头 3 个，弹性杆设计，使用时需有人看护 |\n| 智能滚动球 | 79 元 | 77 件 | USB-C 充电，三档运行模式，遇阻自动转向 |\n\n如果家里已经有智能猫砂盆这类智能设备，**智能滚动球**的自动运行玩法比较搭；想低成本陪猫互动的话，**羽毛逗猫棒**也很合适。两款都可在商品页或商城直接下单，我这边不能代您下单哦～需要我帮您查其他品类（比如猫咪家具、清洁用品）吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-134",
+      "kind": "toolchain",
+      "question": "猫砂盆在哪买,我的订单能看到吗",
+      "passed": false,
+      "expected_tools": [
+        "list_products",
+        "list_orders"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "您好，猫砂盆在我们商城有售，目前有 3 款智能猫砂盆，库存都充足：\n\n| 商品 | 价格 | 规格 | 特点 |\n|---|---|---|---|\n| 智能猫砂盆 Lite | ¥1099 | 6L，适合 1.5–6kg 猫咪 | 自动清理、物理除臭，不含 App 联网 |\n| 智能猫砂盆 Pro | ¥1739 | 9L，适合 1.5–8kg 猫咪 | 自动清理、活性炭除臭，支持 App 健康记录 |\n| 智能猫砂盆 Max | ¥2399 | 12L，适合大型猫与多猫家庭 | 双重称重防夹、App 多猫健康档案 |\n\n购买方式：您可以直接在商城搜索商品名，或进入「智能清洁」分类的商品页自行下单。客服这边不能代您下单，也不能代填收货地址，请您谅解～\n\n关于您的订单，我查到您名下确实有猫砂盆相关的订单：\n\n- 订单 1001：智能猫砂盆，已付款，¥1739\n- 订单 8659：智能猫砂盆，已签收，¥556\n- 订单 6796：智能猫砂盆，待付款，¥1841\n\n另外还有两笔其他商品的订单：2002 自动饮水机（待付款，¥1557）、1137 猫粮 5kg（待付款，¥1320）。\n\n需要我帮您查某一单的物流进度或详情吗？",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": false
+      }
+    },
+    {
+      "id": "AGT-135",
+      "kind": "toolchain",
+      "question": "订单 2002 物流和猫粮目录",
+      "passed": true,
+      "expected_tools": [
+        "query_logistics",
+        "list_products"
+      ],
+      "actual_tools": [
+        "query_logistics",
+        "list_products"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "您好，小喵帮您查好啦～\n\n**📦 订单 2002 物流**\n- 订单商品：自动饮水机（金额 ¥1557，下单时间 2026-07-07 10:00）\n- 物流单号：SF970058539216\n- 物流状态：**派送中**，当前在**成都**（轨迹：成都分拨中心 已发出）\n\n⚠️ 小提醒：系统里这笔订单显示为「**待付款**」，但物流却显示「派送中」，两者对不上。建议您先确认一下订单支付状态，如需核实可联系人工客服帮您查。\n\n**🐱 猫粮目录**\n很抱歉，目前店铺目录中**没有猫粮**，暂不销售该类商品哦。我们现有的品类有：智能清洁、智能喂养、智能看护、宠物食品、清洁用品、猫咪家具、出行用品、玩具、护理用品。如果您想看看宠物食品里的其他商品，可以告诉小喵，我帮您查～\n\n需要我帮您查其他订单或商品吗？",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-136",
+      "kind": "toolchain",
+      "question": "宠物定位器有货吗,顺便看我的订单",
+      "passed": false,
+      "expected_tools": [
+        "query_product",
+        "list_orders"
+      ],
+      "actual_tools": [
+        "query_product"
+      ],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "小喵帮您查好啦～\n\n**🐾 宠物定位器（MH-TRK1）**\n- 价格：299 元\n- 规格：4G 定位，IP67，支持电子围栏\n- 库存：**目前缺货**（库存 0），暂时无法下单，建议您在商品页订阅「到货提醒」，补货后就能第一时间收到通知啦。\n\n**📦 您的订单**\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | 1739 元 |\n| 2002 | 自动饮水机 | 待付款 | 1557 元 |\n| 8659 | 智能猫砂盆 | 已签收 | 556 元 |\n| 6796 | 智能猫砂盆 | 待付款 | 1841 元 |\n| 1137 | 猫粮 5kg | 待付款 | 1320 元 |\n\n其中 2002、6796、1137 三单还是待付款状态，记得及时付款以免订单关闭哦～\n\n需要我帮您查某一单的物流或详情吗？",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": false
+      }
+    },
+    {
+      "id": "AGT-137",
+      "kind": "toolchain",
+      "question": "查 1001 物流,再看你们卖什么",
+      "passed": true,
+      "expected_tools": [
+        "query_logistics",
+        "list_products"
+      ],
+      "actual_tools": [
+        "query_logistics",
+        "list_products"
+      ],
+      "expected_actions": [],
+      "actual_actions": [],
+      "expected_product_found": null,
+      "actual_product_found": null,
+      "answer": "**📦 订单 1001 物流**\n\n- 商品：智能猫砂盆（¥1739，下单时间 2026-07-04 10:00）\n- 物流单号：SF213502378238\n- 当前状态：**已揽件**，包裹在**成都**，最新轨迹为「成都分拨中心 已发出」\n\n包裹刚被揽收，后续运输进度您可以凭单号继续关注～\n\n**🛍️ 我们目前在售的商品（按品类）**\n\n| 品类 | 部分商品（价格） |\n|---|---|\n| 智能清洁 | 智能猫砂盆 Pro ¥1739 / Lite ¥1099 / Max ¥2399 |\n| 智能喂养 | 自动喂食器 ¥329、摄像头版 ¥599；自动饮水机 ¥199 / Plus ¥299 / Pro 不锈钢 ¥469 |\n| 智能看护 | 全景看护摄像头 ¥399；宠物定位器 ¥299（**暂时缺货**，可订阅到货提醒） |\n| 宠物食品 | 全价猫粮 5kg ¥189、幼猫粮 2kg ¥119、主食罐头 12 罐 ¥139、冻干鸡胸肉 200g ¥59 |\n| 清洁用品 | 豆腐猫砂 6L ¥32、混合猫砂 6L ¥39 |\n| 猫咪家具 | 大型猫爬架 ¥459、四季保暖猫窝 ¥89、恒温加热垫 ¥129、大号三档加热垫 ¥199 |\n| 出行用品 / 玩具 / 护理用品 | 也有在售，可告诉我具体需求我帮您查 |\n\n想看哪一款的详细规格或库存，随时告诉我～ 选好后可直接在商品页或商城自行下单哦。",
+      "checks": {
+        "tools": true,
+        "tool_order": true,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-138",
+      "kind": "toolchain",
+      "question": "先列我的订单,再看猫砂盆型号",
+      "passed": false,
+      "expected_tools": [
+        "list_orders",
+        "list_products"
+      ],
+      "actual_tools": [
+        "list_orders",
+        "query_product"
+      ],
+      "expected_actions": [
+        "select_order"
+      ],
+      "actual_actions": [
+        "select_order"
+      ],
+      "expected_product_found": null,
+      "actual_product_found": true,
+      "answer": "您名下共有 5 笔订单：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 2002 | 自动饮水机 | 待付款 | ¥1557 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n| 1137 | 猫粮 5kg | 待付款 | ¥1320 |\n\n猫砂盆目前在售的型号有 3 款，均有现货：\n\n| 型号 | SKU | 价格 | 库存 | 规格 |\n|---|---|---|---|---|\n| 智能猫砂盆 Pro | MH-LP100 | ¥1739 | 28 件 | 9L，适合 1.5kg–8kg 猫咪；自动清理、活性炭除臭，支持 App 健康记录 |\n| 智能猫砂盆 Lite | MH-LP50 | ¥1099 | 45 件 | 6L，适合 1.5kg–6kg 猫咪；自动清理与物理除臭，不含 App 联网功能 |\n| 智能猫砂盆 Max | MH-LP200 | ¥2399 | 12 件 | 12L，适合大型猫与多猫家庭；双重称重防夹、App 多猫健康档案 |\n\n小提示：您订单 1001 的金额与 Pro 款一致，可能是同款；订单 8659 的 ¥556 与目前在售三款价格都不一致，可能是旧款或活动价。\n\n如需下单，请前往对应商品页或商城自行选购，客服这边无法代下单哦～ 需要我帮您对比哪两款，或查某笔订单的物流吗？",
+      "checks": {
+        "tools": false,
+        "tool_order": false,
+        "tool_result": true,
+        "actions": true,
+        "product_found": true,
+        "answer_nonempty": true,
+        "order_scope": true
+      }
+    },
+    {
+      "id": "AGT-139",
+      "kind": "multi",
+      "question": [
+        "今天天气怎么样",
+        "我的订单到哪了"
+      ],
+      "passed": true,
+      "turns": [
+        "今天天气怎么样",
+        "我的订单到哪了"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+        "您名下共有 5 笔订单，其中 2 笔已付款或已签收，可以查到物流；另外 3 笔是待付款，还没有发货。具体情况如下：\n\n**订单 1001｜智能猫砂盆｜¥1739｜已付款**\n- 物流单号：SF213502378238\n- 当前状态：已揽件，在成都分拨中心已发出\n\n**订单 8659｜智能猫砂盆｜¥556｜已签收**\n- 物流单号：SF241565447350\n- 物流显示：已揽件，杭州分拨中心已发出\n- ⚠️ 提醒一下：这笔订单在系统里显示“已签收”，但物流轨迹还停在“已揽件”，两边信息不一致。建议您核对一下是否已收到货；如果需要，我可以帮您转人工核实。\n\n**待付款订单（尚未发货，暂无物流）**\n- 2002｜自动饮水机｜¥1557\n- 6796｜智能猫砂盆｜¥1841\n- 1137｜猫粮 5kg｜¥1320\n\n需要我帮您核实 8659 的物流异常，或者查其他订单的详情吗？"
+      ]
+    },
+    {
+      "id": "AGT-140",
+      "kind": "multi",
+      "question": [
+        "你好",
+        "你们卖什么"
+      ],
+      "passed": true,
+      "turns": [
+        "你好",
+        "你们卖什么"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+        "我们「喵喵优选」主要做猫咪智能用品和日常消耗品，目前有 8 个品类、25 款在售商品，给您按类梳理一下：\n\n**🧹 智能清洁**\n- 智能猫砂盆 Pro ¥1739（9L，适合 1.5–8kg 猫咪，App 健康记录）\n- 智能猫砂盆 Lite ¥1099（6L，自动清理+物理除臭）\n- 智能猫砂盆 Max ¥2399（12L，大型猫/多猫家庭，双重称重防夹）\n\n**🍚 智能喂养**\n- 自动喂食器 ¥329（3L 双电源）｜摄像头版 ¥599（4L，1080P）\n- 自动饮水机 ¥199（2L）｜Plus ¥299（4L，UV 杀菌）｜Pro 不锈钢 ¥469（6L）\n\n**👀 智能看护**\n- 全景看护摄像头 ¥399（2K，360°）\n- 宠物定位器 ¥299（4G+IP67）——**目前缺货**，可订阅到货提醒\n\n**🥫 宠物食品**\n- 全价猫粮 5kg ¥189｜幼猫粮 2kg ¥119｜主食罐头 12 罐 ¥139｜冻干鸡胸肉 200g ¥59\n\n**🧴 清洁用品**\n- 豆腐猫砂 6L ¥32｜混合猫砂 6L ¥39（适合自动猫砂盆）\n\n**🛋 猫咪家具**\n- 大型猫爬架 ¥459｜四季保暖猫窝 ¥89｜恒温加热垫 ¥129｜大号三档加热垫 ¥199\n\n**🎒 出行用品**\n- 航空宠物箱 ¥159｜透明宠物背包 ¥129\n\n**🎣 玩具 & 护理**\n- 羽毛逗猫棒 ¥29｜智能滚动球 ¥79｜宠物指甲剪 ¥35\n\n想了解哪一款的详细规格，或者想让我帮您对比几款（比如三款猫砂盆怎么选），都可以告诉我～ 看中的话直接去商品页下单就行，我这边不能代您下单哦。"
+      ]
+    },
+    {
+      "id": "AGT-141",
+      "kind": "multi",
+      "question": [
+        "我要投诉",
+        "帮我建个工单"
+      ],
+      "passed": true,
+      "turns": [
+        "我要投诉",
+        "帮我建个工单"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+        "好的，我来帮您登记投诉工单。为了准确记录，麻烦您先告诉我：\n\n1. 具体是什么问题？（比如商品质量、物流、服务态度等）\n2. 涉及哪个订单号？（如果有的话）\n\n您描述清楚后，我马上为您提交。"
+      ]
+    },
+    {
+      "id": "AGT-142",
+      "kind": "multi",
+      "question": [
+        "查看我的订单",
+        "订单1001物流"
+      ],
+      "passed": true,
+      "turns": [
+        "查看我的订单",
+        "订单1001物流"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "这是您名下的订单，共 5 笔：\n\n| 订单号 | 商品 | 状态 | 金额 |\n|---|---|---|---|\n| 1001 | 智能猫砂盆 | 已付款 | ¥1739 |\n| 2002 | 自动饮水机 | 待付款 | ¥1557 |\n| 8659 | 智能猫砂盆 | 已签收 | ¥556 |\n| 6796 | 智能猫砂盆 | 待付款 | ¥1841 |\n| 1137 | 猫粮 5kg | 待付款 | ¥1320 |\n\n其中 3 笔还是「待付款」状态（2002、6796、1137），建议您尽快完成支付，以免订单超时关闭哦～\n\n需要我帮您查某一单的物流、保修或退货进度吗？告诉我订单号就好。",
+        "订单 1001（智能猫砂盆）的物流信息如下：\n\n- **物流单号**：SF213502378238\n- **当前状态**：已揽件\n- **当前位置**：成都\n- **最新轨迹**：\n  - 成都分拨中心 已发出\n  - 已揽件（PICKED_UP）\n\n包裹已从成都分拨中心发出，正在运输途中。具体送达时间以物流实际更新为准，您可以稍后再来查询最新轨迹～\n\n需要我帮您看这单的保修状态吗？"
+      ]
+    },
+    {
+      "id": "AGT-143",
+      "kind": "multi",
+      "question": [
+        "有汽水吗",
+        "猫粮有哪些"
+      ],
+      "passed": true,
+      "turns": [
+        "有汽水吗",
+        "猫粮有哪些"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "您好，我是小喵～ 目前我们店铺主营宠物用品，**没有销售汽水或任何饮料类商品**哦。\n\n在售品类包括：智能清洁（猫砂盆）、智能喂养（喂食器/饮水机）、智能看护（摄像头/定位器）、宠物食品（猫粮、罐头、冻干）、清洁用品（猫砂）、猫咪家具（猫爬架、猫窝、加热垫）、出行用品、玩具、护理用品。\n\n如果您想找的是给猫咪喝水的设备，我们有自动饮水机（199 元起）；或者想看看某个品类，我可以帮您列出来～",
+        "我们店铺的猫粮及主食类商品有这几款：\n\n| 商品 | 规格 | 价格 | 库存 |\n|---|---|---|---|\n| 全价猫粮 5kg | 鸡肉配方，5kg，适合 1 岁以上成猫 | 189 元 | 142 |\n| 幼猫粮 2kg | 鸡肉鱼肉配方，2kg，适合 2-12 月龄幼猫 | 119 元 | 74 |\n| 主食罐头 12 罐装 | 85g×12 罐，混合口味，开罐后需冷藏 | 139 元 | 95 |\n| 冻干鸡胸肉 200g | 200g 原切冻干，可作零食或复水喂食 | 59 元 | 120 |\n\n小提示：全价猫粮适合成猫，幼猫粮适合 2-12 月龄的猫咪，可以按猫咪年龄选择～ 想买的话，直接到商品页或商城下单就好，我这边不能代下单哦。\n\n需要我帮您对比一下配方或喂食建议吗？"
+      ]
+    },
+    {
+      "id": "AGT-144",
+      "kind": "multi",
+      "question": [
+        "猫窝可以机洗吗",
+        "那外套呢"
+      ],
+      "passed": true,
+      "turns": [
+        "猫窝可以机洗吗",
+        "那外套呢"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "猫窝的清洗要分两部分看：\n\n**外套**：可以机洗。拆掉内部垫芯后装进洗衣袋，选轻柔模式、冷水洗，洗后阴干，不要暴晒[1]。\n\n**内部垫芯**：不可机洗。进水后填充物会结块变形，只能局部擦洗后晾干[1]。\n\n另外提醒一下，如果您买的是**四季保暖猫窝（型号 MH-NEST20）**，它的商品说明里标注的是「外套可手洗，内部垫芯不可机洗」[10]。这款建议按手洗处理会更稳妥；其他款猫窝的外套则可以按上面的机洗方式操作[1]。\n\n需要的话，可以告诉我您看中的是哪一款，我帮您确认具体规格～",
+        "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。"
+      ]
+    },
+    {
+      "id": "AGT-145",
+      "kind": "multi",
+      "question": [
+        "退款怎么申请",
+        "我要退货"
+      ],
+      "passed": true,
+      "turns": [
+        "退款怎么申请",
+        "我要退货"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "申请退款很简单，按下面步骤操作即可：\n\n**申请步骤**\n1. 打开「喵喵优选」App，进入「我的订单」；\n2. 找到要退的那笔订单，点击「申请退款」；\n3. 按页面提示填写并提交，审核通过后款项会**原路退回**[1]。\n\n**几点补充说明**\n- 如果是无理由退货：自签收之日起 7 天内、商品完好且不影响二次销售的，可以申请；定制类、生鲜类商品除外[3][5]。\n- 如果订单还没发货，也可以直接在「我的订单」里自助取消；如果已经发货，则无法修改收货信息，可以拒收后走退款流程[8]。\n- 如果商品在运输途中破损，请在签收后 48 小时内联系客服，并提供开箱视频和照片；核实后可以免费补发或退款，相关运费由平台承担[7]。\n- 退款到账时效以平台售后规则为准。\n\n如果操作中遇到问题，可以在 App 内通过「我的」-「联系客服」，或订单详情页的「订单售后 / 联系客服」转接在线人工客服（每日 9:00–22:00）[9]。\n\n需要我帮你查一下某笔订单的状态吗？把订单号告诉我就行～",
+        "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。"
+      ]
+    },
+    {
+      "id": "AGT-146",
+      "kind": "multi",
+      "question": null,
+      "passed": true,
+      "interrupt": {
+        "type": "select_order",
+        "orders": [
+          {
+            "order_id": "1001",
+            "product": "智能猫砂盆",
+            "status": "已付款",
+            "amount": 1739
+          },
+          {
+            "order_id": "2002",
+            "product": "自动饮水机",
+            "status": "待付款",
+            "amount": 1557
+          },
+          {
+            "order_id": "8659",
+            "product": "智能猫砂盆",
+            "status": "已签收",
+            "amount": 556
+          },
+          {
+            "order_id": "6796",
+            "product": "智能猫砂盆",
+            "status": "待付款",
+            "amount": 1841
+          },
+          {
+            "order_id": "1137",
+            "product": "猫粮 5kg",
+            "status": "待付款",
+            "amount": 1320
+          }
+        ]
+      },
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": true
+      },
+      "answer": "",
+      "turns": [
+        "猫砂盆坏了",
+        "保修多久"
+      ],
+      "answers": [
+        "",
+        ""
+      ]
+    },
+    {
+      "id": "AGT-147",
+      "kind": "multi",
+      "question": [
+        "转人工",
+        "现在有人吗"
+      ],
+      "passed": true,
+      "turns": [
+        "转人工",
+        "现在有人吗"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "您好，我是小喵～很乐意帮您转接人工客服。为了让人工同事能快速帮您处理，麻烦您先简单说明一下遇到的问题（比如是订单、物流、退换货还是商品咨询），以及相关的订单号（如果有的话）～",
+        "我在的～我是智能客服小喵，随时可以帮您处理订单、物流、退换货和商品咨询等问题。\n\n关于人工客服的在线情况，我这边没法确认具体时段，也不能承诺等待时长，还请您谅解。不过有两个办法可以更快推进：\n\n1. 您先把问题告诉我（比如订单号、遇到的具体情况），大部分问题我可以直接帮您查清楚、处理好；\n2. 如果确实需要人工同事跟进，您明确说一声，我可以帮您创建人工工单，把问题描述记录清楚后转交。\n\n您看方便先说说遇到什么问题吗？"
+      ]
+    },
+    {
+      "id": "AGT-148",
+      "kind": "multi",
+      "question": [
+        "猫粮怎么选",
+        "那幼猫粮呢"
+      ],
+      "passed": true,
+      "turns": [
+        "猫粮怎么选",
+        "那幼猫粮呢"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。",
+        "抱歉,这个问题我暂时没有查到确切信息,不敢乱答。建议您联系人工客服进一步确认,以免给您错误的指引。"
+      ]
+    },
+    {
+      "id": "AGT-149",
+      "kind": "multi",
+      "question": [
+        "订单1001多少钱",
+        "那2002呢"
+      ],
+      "passed": true,
+      "turns": [
+        "订单1001多少钱",
+        "那2002呢"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "订单 1001 的金额是 **1739 元**，商品为「智能猫砂盆」，当前状态是「已付款」，下单时间为 2026-07-04 10:00。\n\n如需查看物流进度或申请售后，随时告诉我～",
+        "订单 2002 的金额是 **1557 元**，商品为「自动饮水机」，当前状态是「待付款」，下单时间为 2026-07-07 10:00。\n\n这单还没付款，建议您尽快在订单页完成支付，以免超时取消～需要我帮您看别的吗？"
+      ]
+    },
+    {
+      "id": "AGT-150",
+      "kind": "multi",
+      "question": [
+        "我要买猫粮",
+        "幼猫的可以吗"
+      ],
+      "passed": true,
+      "turns": [
+        "我要买猫粮",
+        "幼猫的可以吗"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "我们店里有几款猫粮和猫主食，都在售、有货，您可以按猫咪情况选：\n\n| 商品 | 规格/适用 | 价格 | 库存 |\n|---|---|---|---|\n| 全价猫粮 5kg | 鸡肉配方，适合 1 岁以上成猫 | ¥189 | 142 |\n| 幼猫粮 2kg | 鸡肉鱼肉配方，适合 2–12 月龄幼猫 | ¥119 | 74 |\n| 主食罐头 12 罐装 | 85g×12 罐，混合口味 | ¥139 | 95 |\n| 冻干鸡胸肉 200g | 原切冻干，可作零食或复水喂食 | ¥59 | 120 |\n\n小提示：\n- 如果是成年猫，日常主食可以选「全价猫粮 5kg」；想搭配湿粮的话，可以加「主食罐头」。\n- 如果是 2–12 月龄的小猫，建议选「幼猫粮 2kg」。\n- 猫粮开封后建议密封、放在阴凉处保存；罐头开罐后需要冷藏。\n\n您家猫咪多大、大概能吃多久？我可以帮您看看哪款更合适。选好后，直接到对应商品页或商城下单就可以啦，下单和收货地址需要您自己填写哦～",
+        "可以的～「幼猫粮 2kg」就是专门给幼猫吃的：\n\n- **商品**：幼猫粮 2kg（FD-KIT-2K）\n- **配方**：鸡肉鱼肉配方，2kg 装\n- **适用**：2–12 月龄幼猫\n- **价格**：¥119\n- **库存**：74 件，现货在售\n\n几点小提醒：\n- 如果猫咪还不到 2 个月，建议先以母乳或幼猫专用奶粉为主，别急着换干粮；满 2 月龄后再慢慢过渡到这款幼猫粮。\n- 换粮建议用 7 天左右逐步掺换，避免肠胃不适。\n- 幼猫食量小、长得快，2kg 一般能吃一段时间，开封后记得密封、放阴凉处。\n\n如果想让小猫吃得更湿润一点，也可以搭配「主食罐头 12 罐装」（85g×12 罐，¥139，库存 95），少量拌着喂。\n\n选好后直接去「幼猫粮 2kg」的商品页或商城下单就行，下单和收货地址需要您自己填写哦～需要我帮您看看别的搭配吗？"
+      ]
+    },
+    {
+      "id": "AGT-151",
+      "kind": "multi",
+      "question": [
+        "你们卖什么",
+        "有猫砂吗"
+      ],
+      "passed": true,
+      "turns": [
+        "你们卖什么",
+        "有猫砂吗"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "抱歉,我不太确定您的意思。您可以把问题说得更具体些吗?比如您想咨询的商品、某个订单,或退款/售后问题。",
+        "有的,猫砂相关商品目前有这些:\n\n**猫砂(清洁用品)**\n- 豆腐猫砂 6L(原味):32 元,库存 210,低尘结团、可少量冲厕\n- 混合猫砂 6L(豆腐砂+膨润土):39 元,库存 168,快速结团,适合自动猫砂盆\n\n**智能猫砂盆(智能清洁)**\n- 智能猫砂盆 Lite:1099 元,库存 45,6L,适合 1.5–6kg 猫咪\n- 智能猫砂盆 Pro:1739 元,库存 28,9L,适合 1.5–8kg 猫咪,支持 App 健康记录\n- 智能猫砂盆 Max:2399 元,库存 12,12L,适合大型猫与多猫家庭\n\n需要我帮您对比哪一款,或者您想了解某款的详细规格吗?下单可以直接在商品页操作哦。"
+      ]
+    },
+    {
+      "id": "AGT-152",
+      "kind": "multi",
+      "question": [
+        "hello",
+        "你们卖什么"
+      ],
+      "passed": true,
+      "turns": [
+        "hello",
+        "你们卖什么"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "我暂时还不会回答这个,请告诉我你对我们产品的任何咨询~商品、订单、物流、售后都可以问我哦。",
+        "我们「喵喵优选」主要做猫咪智能用品和日常消耗品，目前在售的品类和商品如下：\n\n**智能清洁**\n- 智能猫砂盆 Pro ¥1739（9L，适合 1.5–8kg 猫咪）\n- 智能猫砂盆 Lite ¥1099（6L，适合 1.5–6kg 猫咪）\n- 智能猫砂盆 Max ¥2399（12L，适合大型猫与多猫家庭）\n\n**智能喂养**\n- 自动喂食器 ¥329 / 自动喂食器摄像头版 ¥599\n- 自动饮水机 ¥199 / Plus ¥299 / Pro 不锈钢 ¥469\n\n**智能看护**\n- 全景看护摄像头 ¥399\n- 宠物定位器 ¥299（目前缺货，可订阅到货提醒）\n\n**宠物食品**\n- 全价猫粮 5kg ¥189、幼猫粮 2kg ¥119\n- 主食罐头 12 罐装 ¥139、冻干鸡胸肉 200g ¥59\n\n**清洁用品**\n- 豆腐猫砂 6L ¥32、混合猫砂 6L ¥39\n\n**猫咪家具**\n- 大型猫爬架 ¥459、四季保暖猫窝 ¥89\n- 恒温加热垫 ¥129、大号三档加热垫 ¥199\n\n**出行用品**\n- 航空宠物箱 ¥159、透明宠物背包 ¥129\n\n**玩具 & 护理**\n- 羽毛逗猫棒 ¥29、智能滚动球 ¥79、宠物指甲剪 ¥35\n\n想看哪款的详细规格或库存，告诉我商品名就行～ 选好后可以直接在商品页或商城下单哦。"
+      ]
+    },
+    {
+      "id": "AGT-153",
+      "kind": "multi",
+      "question": [
+        "再不回我就投诉",
+        "算了帮我建工单"
+      ],
+      "passed": true,
+      "turns": [
+        "再不回我就投诉",
+        "算了帮我建工单"
+      ],
+      "checks": {
+        "answer_nonempty": true,
+        "interaction_pending": false,
+        "all_turns_interrupted": false
+      },
+      "interrupts": [],
+      "answers": [
+        "非常抱歉给您带来了不好的体验,我理解您的心情。您可以选择转接人工客服,或让我为您登记一张工单跟进处理。",
+        "好的，我来帮您登记工单。不过还需要您补充一下具体问题，我才能准确记录：\n\n1. 您遇到的是什么问题？（比如订单、物流、商品、售后等）\n2. 涉及哪个订单号或商品？（如果有的话）\n\n您简单说一下，我马上帮您提交。"
+      ]
     }
   ]
 }
