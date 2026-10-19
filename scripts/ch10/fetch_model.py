@@ -1,9 +1,8 @@
 """分类器模型远程分发:按发布清单下载 ONNX 包,逐文件 SHA256 校验后原子写入。
 
 安全与授权边界:
-- 只接受发布清单里已填写的 artifact_uri(https:// 或 file://)。当前仓库清单
-  artifact_uri=null,表示尚未选择已授权的上传目标;此时脚本明确拒绝,不会
-  从公开 GitHub Release 或任何默认地址下载。
+- 只接受发布清单里已填写的 artifact_uri(https:// 或 file://)。私有 GitHub
+  Release 链接由已登录的 gh CLI 下载,不把访问令牌写入清单或命令行。
 - 下载先落临时文件,解压到同目录暂存区;校验 archive_sha256 与 manifest.files
   后整体替换目标目录。失败保留原目录,清理暂存,不产生半包。
 - 只接受归档根目录下的扁平文件名,拒绝路径穿越、子目录和多余文件。
@@ -18,7 +17,9 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
+import subprocess
 import sys
 import tempfile
 import urllib.parse
@@ -74,8 +75,39 @@ def _download(uri: str, dest: Path, timeout: float = 60) -> None:
             raise FetchError(f"本地 artifact 不存在:{src}")
         shutil.copyfile(src, dest)
         return
+    if parsed.netloc == "github.com" and "/releases/download/" in parsed.path:
+        _download_github_release(parsed, dest)
+        return
     with urllib.request.urlopen(uri, timeout=timeout) as response, dest.open("wb") as fh:
         shutil.copyfileobj(response, fh)
+
+
+def _download_github_release(parsed: urllib.parse.ParseResult, dest: Path) -> None:
+    """用 gh 当前登录态下载私有 Release 资产;绝不接收清单里的令牌。"""
+    parts = [urllib.parse.unquote(part) for part in parsed.path.strip("/").split("/")]
+    valid_part = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+    if (parsed.scheme != "https" or parsed.netloc != "github.com"
+            or parsed.params or parsed.query or parsed.fragment
+            or len(parts) != 6 or parts[2:4] != ["releases", "download"]
+            or not all(valid_part.fullmatch(part) and part not in (".", "..")
+                       for part in (*parts[:2], *parts[4:]))):
+        raise FetchError("无效的 GitHub Release 资产地址")
+    if not shutil.which("gh"):
+        raise FetchError("私有 GitHub Release 下载需要安装 gh 并执行 gh auth login")
+    owner, repo, _, _, tag, asset = parts
+    cmd = ["gh", "release", "download", tag, "--repo", f"{owner}/{repo}",
+           "--pattern", asset, "--dir", str(dest.parent)]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    except OSError as exc:
+        raise FetchError("GitHub Release 下载失败;请检查 gh auth login 与网络连接") from exc
+    if result.returncode != 0:
+        # gh 的错误输出可能包含终端环境信息,不要写入报告或异常消息。
+        raise FetchError("GitHub Release 下载失败;请检查 gh auth login、仓库权限与网络连接")
+    downloaded = dest.parent / asset
+    if not downloaded.is_file():
+        raise FetchError("GitHub Release 未返回清单指定的资产")
+    downloaded.replace(dest)
 
 
 def _safe_members(zf: zipfile.ZipFile) -> list[str]:
@@ -123,6 +155,9 @@ def install_from_archive(archive: Path, manifest: dict, out: Path = OUT) -> None
                 raise FetchError(f"文件 SHA256 不一致:{name}")
         local_manifest = dict(manifest)
         local_manifest.pop("archive_sha256", None)
+        # 远端位置只属于发布清单,不属于模型身份;本地导出的原始包在此字段为 null。
+        # 否则同一 ONNX 包在新环境下载后 bundle_id 会因 URL 不同而漂移。
+        local_manifest["artifact_uri"] = None
         (staging / "artifact-manifest.json").write_text(
             json.dumps(local_manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         backup = None

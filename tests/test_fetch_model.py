@@ -3,6 +3,7 @@ import hashlib
 import json
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -31,8 +32,8 @@ def _bundle(tmp_path: Path) -> tuple[Path, dict, Path]:
 def test_refuses_missing_manifest_and_unconfigured_release(tmp_path):
     assert fetch_model.main(["--manifest", str(tmp_path / "missing.json"),
                              "--out", str(tmp_path / "x"), "--check-only"]) == 1
-    manifest = Path("data/ch10/artifact-manifest.json")
-    assert json.loads(manifest.read_text(encoding="utf-8"))["artifact_uri"] is None
+    manifest = tmp_path / "unconfigured.json"
+    manifest.write_text(json.dumps({"artifact_uri": None, "files": {}}), encoding="utf-8")
     with pytest.raises(fetch_model.FetchError):
         fetch_model.fetch(manifest, tmp_path / "x")
 
@@ -61,6 +62,7 @@ def test_download_verifies_and_writes_then_reuses(tmp_path):
     out = tmp_path / "onnx"
     assert fetch_model.fetch(manifest_path, out) == "downloaded"
     assert fetch_model.status(out) == "present"
+    assert json.loads((out / "artifact-manifest.json").read_text())["artifact_uri"] is None
     assert fetch_model.fetch(manifest_path, out) == "present"
 
 
@@ -84,3 +86,45 @@ def test_wrong_file_hash_does_not_replace_target(tmp_path):
         fetch_model.install_from_archive(archive, manifest, out)
     assert (out / "keep.txt").read_text(encoding="utf-8") == "local"
     assert not (out / "model.onnx").exists()
+
+
+def test_private_github_release_download_uses_gh_auth_without_token_in_command(
+        tmp_path, monkeypatch):
+    uri = ("https://github.com/Huang1Hx/EcomAgent/releases/download/"
+           "classifier-v1/model.zip")
+    dest = tmp_path / "bundle.zip"
+    seen = []
+
+    def fake_run(cmd, **kwargs):
+        seen.append((cmd, kwargs))
+        (tmp_path / "model.zip").write_bytes(b"release-asset")
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(fetch_model.shutil, "which", lambda name: "/usr/bin/gh")
+    monkeypatch.setattr(fetch_model.subprocess, "run", fake_run)
+    fetch_model._download(uri, dest)
+    assert dest.read_bytes() == b"release-asset"
+    cmd, kwargs = seen[0]
+    assert cmd == ["gh", "release", "download", "classifier-v1", "--repo",
+                   "Huang1Hx/EcomAgent", "--pattern", "model.zip", "--dir", str(tmp_path)]
+    assert kwargs["capture_output"] is True
+    assert "token" not in " ".join(cmd).lower()
+
+
+def test_private_github_release_download_failure_hides_cli_output(tmp_path, monkeypatch):
+    uri = ("https://github.com/Huang1Hx/EcomAgent/releases/download/"
+           "classifier-v1/model.zip")
+    monkeypatch.setattr(fetch_model.shutil, "which", lambda name: "/usr/bin/gh")
+    monkeypatch.setattr(fetch_model.subprocess, "run", lambda *a, **k:
+                        SimpleNamespace(returncode=1, stderr="secret-token-in-cli-output"))
+    with pytest.raises(fetch_model.FetchError, match="gh auth login") as exc:
+        fetch_model._download(uri, tmp_path / "bundle.zip")
+    assert "secret-token-in-cli-output" not in str(exc.value)
+
+
+def test_github_release_url_with_path_traversal_is_rejected(tmp_path, monkeypatch):
+    monkeypatch.setattr(fetch_model.shutil, "which", lambda name: "/usr/bin/gh")
+    with pytest.raises(fetch_model.FetchError):
+        fetch_model._download(
+            "https://github.com/Huang1Hx/EcomAgent/releases/download/"
+            "classifier-v1/..%2Fsecret", tmp_path / "bundle.zip")
