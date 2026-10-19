@@ -49,6 +49,48 @@ def test_retrieval_summary_keeps_numerator_and_denominator():
                    "mrr_numerator": 1.0, "mrr_denominator": 2, "mrr": 0.5}
 
 
+def test_grouped_retrieval_summary_preserves_cross_document_partial_credit():
+    from scripts.rag_diagnosis import grouped_retrieval_summary
+    rows = [
+        {"id": "single", "bucket": "A_policy", "expect_section": "policy"},
+        {"id": "multi", "bucket": "E_multi",
+         "expect_sections_all": [["shipping"], ["refund"]]},
+    ]
+    hits = {
+        "single": [{"section_path": "policy"}],
+        "multi": [{"section_path": "shipping"}],
+    }
+    out = grouped_retrieval_summary(rows, hits)
+    assert out["n"] == 2
+    assert out["recall_at_5_numerator"] == 1.5
+    assert out["recall_at_5"] == 0.75
+    assert out["mrr_numerator"] == 1.5
+    assert out["mrr"] == 0.75
+    assert out["samples"][1] == {"id": "multi", "bucket": "E_multi", "ranks": [1, 0],
+                                 "recall_at_5": 0.5, "rr": 0.5}
+
+
+def test_committed_grouped_diagnosis_has_current_dataset_and_recomputable_scores():
+    import hashlib
+    from pathlib import Path
+
+    from scripts import eval_ch04
+
+    dataset = Path("data/eval/rag_blind_test.jsonl")
+    report = json.loads(Path("data/eval/reports/rag-retrieval-diagnosis.json").read_text())
+    rows = [json.loads(line) for line in dataset.read_text().splitlines() if line.strip()]
+    graded_ids = {row["id"] for row in rows if row["bucket"] in eval_ch04.GRADED_BUCKETS}
+    assert report["dataset_sha256"] == hashlib.sha256(dataset.read_bytes()).hexdigest()
+    assert {item["id"] for item in report["samples"]} == graded_ids
+    assert report["n"] == len(report["samples"]) == 282
+    recall = sum(eval_ch04._recall_at(item["ranks"], 5) for item in report["samples"])
+    rr = sum(eval_ch04._rr(item["ranks"]) for item in report["samples"])
+    assert report["recall_at_5_numerator"] == round(recall, 6)
+    assert report["recall_at_5"] == round(recall / report["n"], 4)
+    assert report["mrr_numerator"] == round(rr, 6)
+    assert report["mrr"] == round(rr / report["n"], 4)
+
+
 def test_saved_report_denominators_match_samples():
     import subprocess
 

@@ -9,6 +9,7 @@
 import argparse
 import asyncio
 import collections
+import hashlib
 import json
 import os
 import pathlib
@@ -110,6 +111,31 @@ def retrieval_summary(rows, hits_by_id, expect_by_id=None) -> dict:
             "mrr": round(rr / len(rows), 4) if rows else None}
 
 
+def grouped_retrieval_summary(rows, hits_by_id) -> dict:
+    """按正式评测器的证据组口径重算；保留逐题名次以便离线核对。"""
+    from scripts import eval_ch04
+
+    details = []
+    for row in rows:
+        ranks = eval_ch04._ranks_per_group(hits_by_id.get(row["id"], []), row)
+        details.append({"id": row["id"], "bucket": row["bucket"], "ranks": ranks,
+                        "recall_at_5": eval_ch04._recall_at(ranks, 5),
+                        "rr": eval_ch04._rr(ranks)})
+    n = len(details)
+    recall_sum = sum(item["recall_at_5"] for item in details)
+    rr_sum = sum(item["rr"] for item in details)
+    return {"n": n, "recall_at_5_numerator": round(recall_sum, 6),
+            "recall_at_5": round(recall_sum / n, 4) if n else None,
+            "mrr_numerator": round(rr_sum, 6),
+            "mrr": round(rr_sum / n, 4) if n else None,
+            "samples": details}
+
+
+def _sha256(path) -> str:
+    with open(path, "rb") as fh:
+        return hashlib.file_digest(fh, "sha256").hexdigest()
+
+
 def check_saved_report(rows, report) -> dict:
     refusal = report.get("refusal") or {}
     n = len(rows)
@@ -152,6 +178,8 @@ async def _with_retrieval(rows, out_dir):
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--with-retrieval", action="store_true")
+    parser.add_argument("--cached-hits", help="从已有命中缓存离线重算正式证据组口径,不请求模型")
+    parser.add_argument("--grouped-report", help="将带逐题名次和来源哈希的诊断报告写到此路径")
     parser.add_argument("--out", default="/tmp/rag-diagnosis")
     parser.add_argument("--dataset", default=str(DEFAULT_SET))
     parser.add_argument("--report", default=str(DEFAULT_REPORT))
@@ -163,13 +191,37 @@ def main(argv=None) -> int:
     audit = bucket_audit(rows)
     saved = check_saved_report(rows, report)
     result = {"dataset": args.dataset, "report": args.report, "audit": audit, "saved": saved}
+    if args.with_retrieval and args.cached_hits:
+        parser.error("--with-retrieval 与 --cached-hits 只能选一个")
+    if args.grouped_report and not args.cached_hits:
+        parser.error("--grouped-report 需要 --cached-hits")
     if args.with_retrieval:
         by_id = asyncio.run(_with_retrieval(rows, out))
         graded = [r for r in rows if r.get("bucket") in ("A_policy", "B_model", "C_colloquial", "E_multi")]
         result["retrieval_recomputed"] = retrieval_summary(graded, by_id)
+    if args.cached_hits:
+        by_id = json.loads(pathlib.Path(args.cached_hits).read_text(encoding="utf-8"))
+        graded = [r for r in rows if r.get("bucket") in ("A_policy", "B_model", "C_colloquial", "E_multi")]
+        if set(by_id) != {row["id"] for row in graded}:
+            parser.error("命中缓存的题号与当前可作答题集不一致")
+        grouped = grouped_retrieval_summary(graded, by_id)
+        grouped.update({"kind": "local_cached_retrieval_diagnostic_not_release_pass",
+                        "dataset_sha256": _sha256(args.dataset),
+                        "source_hits_sha256": _sha256(args.cached_hits),
+                        "metric_definition": "eval_ch04._ranks_per_group/_recall_at/_rr"})
+        result["retrieval_grouped"] = grouped
+        if args.grouped_report:
+            target = pathlib.Path(args.grouped_report)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(grouped, ensure_ascii=False, indent=2) + "\n",
+                              encoding="utf-8")
     (out / "diagnosis.json").write_text(json.dumps(result, ensure_ascii=False, indent=1) + "\n",
                                         encoding="utf-8")
-    print(json.dumps(result, ensure_ascii=False, indent=1))
+    console = dict(result)
+    if "retrieval_grouped" in console:
+        console["retrieval_grouped"] = {k: v for k, v in console["retrieval_grouped"].items()
+                                        if k != "samples"}
+    print(json.dumps(console, ensure_ascii=False, indent=1))
     return 0 if saved["ok"] else 1
 
 

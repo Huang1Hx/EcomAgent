@@ -1,0 +1,2643 @@
+{
+  "n": 282,
+  "recall_at_5_numerator": 248.5,
+  "recall_at_5": 0.8812,
+  "mrr_numerator": 166.912103,
+  "mrr": 0.5919,
+  "samples": [
+    {
+      "id": "RAG-B-A-退货政策",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-退货政策-B",
+      "bucket": "A_policy",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-A-退款申请",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-退款申请-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-换货流程",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-换货流程-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-发货时效",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-发货时效-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-运费计算",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-运费计算-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-开票入口",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-开票入口-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-支付方式",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-支付方式-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-会员等级",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-会员等级-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-优惠券用法",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-优惠券用法-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-配送范围",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-配送范围-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-订单取消",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-订单取消-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-缺货补货",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-缺货补货-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-价保起算",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-价保起算-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-会员运费权益",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-会员运费权益-B",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-无理由退货范围",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-无理由退货范围-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-退款时效口径",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-退款时效口径-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-换货条件",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-换货条件-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-换货运费",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-换货运费-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-保修范围",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-保修范围-B",
+      "bucket": "A_policy",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-A-运输破损",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-运输破损-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-预售定金",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-预售定金-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-处理时限表",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-处理时限表-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-保修说明",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-保修说明-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-客服时间",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-客服时间-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-维修寄修",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-维修寄修-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-积分入账",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-积分入账-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-积分抵扣",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-积分抵扣-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-开票类型",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-开票类型-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-开票时效",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-开票时效-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-A-偏远地区运费",
+      "bucket": "A_policy",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-A-偏远地区运费-B",
+      "bucket": "A_policy",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫砂盆Pro",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫砂盆Pro-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫砂盆Lite联网",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫砂盆Lite联网-B",
+      "bucket": "B_model",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-B-猫砂盆Max体重",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫砂盆Max体重-B",
+      "bucket": "B_model",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-B-防水机W20过滤",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-防水机W20过滤-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-防水机W40杀菌",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-防水机W40杀菌-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-防水机W60水箱",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-防水机W60水箱-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫爬架承重",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫爬架承重-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-加热垫温度",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-加热垫温度-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-加热垫档位",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-加热垫档位-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-喂食器基础版断电",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-喂食器基础版断电-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-喂食器摄像头版断电",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-喂食器摄像头版断电-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-喂食器摄像头区别",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-喂食器摄像头区别-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-全景摄像头存储",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-全景摄像头存储-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-全景摄像头画质",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-全景摄像头画质-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫窝尺寸",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫窝尺寸-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫窝保修",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫窝保修-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-摄像头型号区分",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-摄像头型号区分-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-喂食器粮桶",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-喂食器粮桶-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫砂盆废砂盒",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫砂盆废砂盒-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-饮水机清洗",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-饮水机清洗-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-加热垫定时",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-加热垫定时-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫爬架高度",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫爬架高度-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-摄像头供电",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-摄像头供电-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-喂食器语音",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-喂食器语音-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫窝材质",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫窝材质-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-猫砂盆供电",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫砂盆供电-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-饮水机水位",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-饮水机水位-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-喂食器容量",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-喂食器容量-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-B-定位器防丢",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-定位器防丢-B",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-猫粮适龄",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-猫粮适龄-B",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-猫砂结团",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-猫砂结团-B",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-航空箱尺寸",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-航空箱尺寸-B",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-逗猫棒组成",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-逗猫棒组成-B",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-主食罐规格",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-主食罐规格-B",
+      "bucket": "B_model",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-B-猫窝适温",
+      "bucket": "B_model",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-B-猫窝适温-B",
+      "bucket": "B_model",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-退货政策-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-退货政策-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-C-退款申请-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-C-退款申请-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        0
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.0
+    },
+    {
+      "id": "RAG-B-C-换货流程-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-换货流程-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-发货时效-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-发货时效-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-运费计算-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-运费计算-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-C-开票入口-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-开票入口-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-C-支付方式-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-支付方式-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-会员等级-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-C-会员等级-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        6
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.16666666666666666
+    },
+    {
+      "id": "RAG-B-C-优惠券用法-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-优惠券用法-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-配送范围-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-配送范围-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-订单取消-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-订单取消-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-C-缺货补货-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-缺货补货-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-价保起算-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-价保起算-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-会员运费权益-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-会员运费权益-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-无理由退货范围-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-无理由退货范围-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-C-退款时效口径-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-退款时效口径-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-换货条件-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-换货条件-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-换货运费-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-换货运费-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-保修范围-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-C-保修范围-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        6
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.16666666666666666
+    },
+    {
+      "id": "RAG-B-C-运输破损-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-运输破损-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-预售定金-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-预售定金-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-处理时限表-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-处理时限表-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-保修说明-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-保修说明-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-客服时间-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-客服时间-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-维修寄修-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-维修寄修-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-积分入账-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-积分入账-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-积分抵扣-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-积分抵扣-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-开票类型-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-开票类型-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-开票时效-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-开票时效-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-C-偏远地区运费-2",
+      "bucket": "C_colloquial",
+      "ranks": [
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 1.0
+    },
+    {
+      "id": "RAG-B-C-偏远地区运费-2-B",
+      "bucket": "C_colloquial",
+      "ranks": [
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-E-退货+运费",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        1
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5833333333333334
+    },
+    {
+      "id": "RAG-B-E-退货+运费-B",
+      "bucket": "E_multi",
+      "ranks": [
+        0,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-E-价保+无理由时间",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-价保+无理由时间-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-会员+偏远运费",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-会员+偏远运费-B",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.6666666666666666
+    },
+    {
+      "id": "RAG-B-E-换货+保修",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        7
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3214285714285714
+    },
+    {
+      "id": "RAG-B-E-换货+保修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        0
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.125
+    },
+    {
+      "id": "RAG-B-E-破损+客服",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-破损+客服-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-退款+处理时限",
+      "bucket": "E_multi",
+      "ranks": [
+        0,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-E-退款+处理时限-B",
+      "bucket": "E_multi",
+      "ranks": [
+        0,
+        4
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.125
+    },
+    {
+      "id": "RAG-B-E-积分+运费",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        9
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5555555555555556
+    },
+    {
+      "id": "RAG-B-E-积分+运费-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        5
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.35
+    },
+    {
+      "id": "RAG-B-E-开票+支付",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.625
+    },
+    {
+      "id": "RAG-B-E-开票+支付-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    },
+    {
+      "id": "RAG-B-E-机洗+猫窝保修",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.625
+    },
+    {
+      "id": "RAG-B-E-机洗+猫窝保修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        8,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3125
+    },
+    {
+      "id": "RAG-B-E-Lite+App激活",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-Lite+App激活-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-喂食器断电+卡粮",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-喂食器断电+卡粮-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-摄像头+WiFi",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    },
+    {
+      "id": "RAG-B-E-摄像头+WiFi-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        6
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.20833333333333331
+    },
+    {
+      "id": "RAG-B-E-预售+取消",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-预售+取消-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-缺货+补货提醒",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-缺货+补货提醒-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-保修+寄修",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-保修+寄修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-会员+积分",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-会员+积分-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-支付失败+订单",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.625
+    },
+    {
+      "id": "RAG-B-E-支付失败+订单-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        7
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3214285714285714
+    },
+    {
+      "id": "RAG-B-E-发票+价保",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        1
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5833333333333334
+    },
+    {
+      "id": "RAG-B-E-发票+价保-B",
+      "bucket": "E_multi",
+      "ranks": [
+        10,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3
+    },
+    {
+      "id": "RAG-B-E-换货+积分",
+      "bucket": "E_multi",
+      "ranks": [
+        7,
+        1
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5714285714285714
+    },
+    {
+      "id": "RAG-B-E-换货+积分-B",
+      "bucket": "E_multi",
+      "ranks": [
+        0,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-E-发货+偏远",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    },
+    {
+      "id": "RAG-B-E-发货+偏远-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        5
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.225
+    },
+    {
+      "id": "RAG-B-E-保修+换货运费",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        1
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5833333333333334
+    },
+    {
+      "id": "RAG-B-E-保修+换货运费-B",
+      "bucket": "E_multi",
+      "ranks": [
+        0,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-E-摄像头+喂食器",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-摄像头+喂食器-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-猫窝清洗+保修",
+      "bucket": "E_multi",
+      "ranks": [
+        3,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.6666666666666666
+    },
+    {
+      "id": "RAG-B-E-猫窝清洗+保修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-E-预售+发货",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-预售+发货-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-破损+退货运费",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.6666666666666666
+    },
+    {
+      "id": "RAG-B-E-破损+退货运费-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        6
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-E-会员售后+客服时间",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        0
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-E-会员售后+客服时间-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        0
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.25
+    },
+    {
+      "id": "RAG-B-E-积分兑换+滤芯",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-积分兑换+滤芯-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-退款+发票",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-退款+发票-B",
+      "bucket": "E_multi",
+      "ranks": [
+        8,
+        4
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.1875
+    },
+    {
+      "id": "RAG-B-E-订单取消+定金",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.625
+    },
+    {
+      "id": "RAG-B-E-订单取消+定金-B",
+      "bucket": "E_multi",
+      "ranks": [
+        8,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3125
+    },
+    {
+      "id": "RAG-B-E-故障自查+寄修",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-故障自查+寄修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-加热垫+保修",
+      "bucket": "E_multi",
+      "ranks": [
+        5,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.6
+    },
+    {
+      "id": "RAG-B-E-加热垫+保修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        10,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3
+    },
+    {
+      "id": "RAG-B-E-缺货+积分",
+      "bucket": "E_multi",
+      "ranks": [
+        5,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.35
+    },
+    {
+      "id": "RAG-B-E-缺货+积分-B",
+      "bucket": "E_multi",
+      "ranks": [
+        10,
+        4
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.175
+    },
+    {
+      "id": "RAG-B-E-价保+会员",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    },
+    {
+      "id": "RAG-B-E-价保+会员-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        6
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.20833333333333331
+    },
+    {
+      "id": "RAG-B-E-退货+客服入口",
+      "bucket": "E_multi",
+      "ranks": [
+        3,
+        5
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.26666666666666666
+    },
+    {
+      "id": "RAG-B-E-退货+客服入口-B",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        10
+      ],
+      "recall_at_5": 0.0,
+      "rr": 0.13333333333333333
+    },
+    {
+      "id": "RAG-B-E-支付+发票",
+      "bucket": "E_multi",
+      "ranks": [
+        0,
+        1
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5
+    },
+    {
+      "id": "RAG-B-E-支付+发票-B",
+      "bucket": "E_multi",
+      "ranks": [
+        3,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    },
+    {
+      "id": "RAG-B-E-换货+保修起算",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        1
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.5833333333333334
+    },
+    {
+      "id": "RAG-B-E-换货+保修起算-B",
+      "bucket": "E_multi",
+      "ranks": [
+        10,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3
+    },
+    {
+      "id": "RAG-B-E-安装+故障",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-E-安装+故障-B",
+      "bucket": "E_multi",
+      "ranks": [
+        10,
+        4
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.175
+    },
+    {
+      "id": "RAG-B-E-维修+人工",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-维修+人工-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-猫砂盆清理+保修",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-猫砂盆清理+保修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    },
+    {
+      "id": "RAG-B-E-自动饮水机+清洗",
+      "bucket": "E_multi",
+      "ranks": [
+        3,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.6666666666666666
+    },
+    {
+      "id": "RAG-B-E-自动饮水机+清洗-B",
+      "bucket": "E_multi",
+      "ranks": [
+        6,
+        2
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-E-喂食器+摄像头",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-喂食器+摄像头-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        4
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-会员+退货",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-会员+退货-B",
+      "bucket": "E_multi",
+      "ranks": [
+        7,
+        3
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.23809523809523808
+    },
+    {
+      "id": "RAG-B-E-积分+退货",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-积分+退货-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-开票+售后",
+      "bucket": "E_multi",
+      "ranks": [
+        1,
+        3
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.6666666666666666
+    },
+    {
+      "id": "RAG-B-E-开票+售后-B",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        6
+      ],
+      "recall_at_5": 0.5,
+      "rr": 0.3333333333333333
+    },
+    {
+      "id": "RAG-B-E-物流破损+会员",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-物流破损+会员-B",
+      "bucket": "E_multi",
+      "ranks": [
+        4,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.375
+    },
+    {
+      "id": "RAG-B-E-延保+保修",
+      "bucket": "E_multi",
+      "ranks": [
+        2,
+        1
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.75
+    },
+    {
+      "id": "RAG-B-E-延保+保修-B",
+      "bucket": "E_multi",
+      "ranks": [
+        3,
+        2
+      ],
+      "recall_at_5": 1.0,
+      "rr": 0.41666666666666663
+    }
+  ],
+  "kind": "local_cached_retrieval_diagnostic_not_release_pass",
+  "dataset_sha256": "defd245ec63291d153e002113f297fdcbc03908a726f8a7d6f78a9e40bb024da",
+  "source_hits_sha256": "ab2112f1013f23a4c7e6b34a2c4f9d7538dc62aa2cac6593d6a9cd07dc707600",
+  "metric_definition": "eval_ch04._ranks_per_group/_recall_at/_rr"
+}
