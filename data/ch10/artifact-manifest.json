@@ -131,5 +131,6 @@
     "tokenizer_config.json": "e0d296aa18ede6b0c36a8469ba2f1ee5d8aeb912031b70982fc47ab312db55f4"
   },
   "training_git_sha": "587dc750257a0d362a5a85339d5248d83a5acbad",
-  "artifact_uri": null
+  "archive_sha256": "4f8775145414cd84ec297141b051b43dfcb4c4df335a5ba037a3b25d7ad8c16a",
+  "artifact_uri": "https://github.com/Huang1Hx/EcomAgent/releases/download/classifier-onnx-v1-bcea2710/mewhelp-classifier-onnx-v1.zip"
 }

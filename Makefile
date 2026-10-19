@@ -59,7 +59,7 @@ ch10-export:  ## ch10 导出 ONNX 并校验与 torch 预测完全一致
 ch10-threshold-scan:  ## ch10 阈值扫描重演:九候选线各算一遍 micro-F1(需 :8110)
 	uv run --group ml python -m scripts.ch10.scan_threshold_replay --data-dir $(or $(DATA_DIR),dataset)
 
-classifier-bootstrap:  ## ch10 从发布清单下载并校验 ONNX 包(artifact_uri 未配置时明确失败)
+classifier-bootstrap:  ## ch10 从私有 Release 下载并校验 ONNX 包(需本仓库 gh 登录态)
 	PYTHONPATH=. uv run python -m scripts.ch10.fetch_model
 
 classifier-up:  ## ch10 推理服务 :8110(ONNX 轻运行时)

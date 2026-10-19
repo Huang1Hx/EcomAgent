@@ -2,7 +2,8 @@
 
 安全与授权边界:
 - 只接受发布清单里已填写的 artifact_uri(https:// 或 file://)。私有 GitHub
-  Release 链接由已登录的 gh CLI 下载,不把访问令牌写入清单或命令行。
+  Release 链接借助 gh 登录态向 GitHub API 换取临时下载地址,不把访问令牌
+  写入清单、资产下载请求或命令行。
 - 下载先落临时文件,解压到同目录暂存区;校验 archive_sha256 与 manifest.files
   后整体替换目标目录。失败保留原目录,清理暂存,不产生半包。
 - 只接受归档根目录下的扁平文件名,拒绝路径穿越、子目录和多余文件。
@@ -22,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -83,7 +85,7 @@ def _download(uri: str, dest: Path, timeout: float = 60) -> None:
 
 
 def _download_github_release(parsed: urllib.parse.ParseResult, dest: Path) -> None:
-    """用 gh 当前登录态下载私有 Release 资产;绝不接收清单里的令牌。"""
+    """私有 Release:用 gh 登录态取资产元数据和临时 URL,流式下载且不转发令牌。"""
     parts = [urllib.parse.unquote(part) for part in parsed.path.strip("/").split("/")]
     valid_part = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
     if (parsed.scheme != "https" or parsed.netloc != "github.com"
@@ -95,19 +97,65 @@ def _download_github_release(parsed: urllib.parse.ParseResult, dest: Path) -> No
     if not shutil.which("gh"):
         raise FetchError("私有 GitHub Release 下载需要安装 gh 并执行 gh auth login")
     owner, repo, _, _, tag, asset = parts
-    cmd = ["gh", "release", "download", tag, "--repo", f"{owner}/{repo}",
-           "--pattern", asset, "--dir", str(dest.parent)]
+    release_path = f"repos/{owner}/{repo}/releases/tags/{tag}"
+
+    def gh(*args: str) -> str:
+        try:
+            result = subprocess.run(["gh", *args], capture_output=True, text=True,
+                                    check=False, timeout=30)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise FetchError("GitHub API 查询失败;请检查 gh auth login 与网络连接") from exc
+        if result.returncode != 0:
+            # CLI 错误文本可能含终端环境信息,不带入异常或报告。
+            raise FetchError("GitHub API 查询失败;请检查 gh auth login、仓库权限与网络连接")
+        return result.stdout.strip()
+
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=False)
-    except OSError as exc:
-        raise FetchError("GitHub Release 下载失败;请检查 gh auth login 与网络连接") from exc
-    if result.returncode != 0:
-        # gh 的错误输出可能包含终端环境信息,不要写入报告或异常消息。
-        raise FetchError("GitHub Release 下载失败;请检查 gh auth login、仓库权限与网络连接")
-    downloaded = dest.parent / asset
-    if not downloaded.is_file():
-        raise FetchError("GitHub Release 未返回清单指定的资产")
-    downloaded.replace(dest)
+        release = json.loads(gh("api", release_path))
+        matches = [item for item in release.get("assets", []) if item.get("name") == asset]
+        if len(matches) != 1:
+            raise FetchError("GitHub Release 未找到清单指定的唯一资产")
+        api_url = matches[0].get("url", "")
+        api = urllib.parse.urlparse(api_url)
+        if (api.scheme != "https" or api.netloc != "api.github.com"
+                or not re.fullmatch(
+                    rf"/repos/{re.escape(owner)}/{re.escape(repo)}/releases/assets/[0-9]+",
+                    api.path)):
+            raise FetchError("GitHub Release 返回了无效的资产 API 地址")
+    except (ValueError, TypeError, KeyError) as exc:
+        raise FetchError("GitHub Release 元数据无效") from exc
+
+    token = gh("auth", "token")
+    if not token:
+        raise FetchError("GitHub 认证缺失;请执行 gh auth login")
+
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            return None
+
+    request = urllib.request.Request(api_url, headers={
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/octet-stream",
+        "X-GitHub-Api-Version": "2022-11-28",
+    })
+    try:
+        try:
+            response = urllib.request.build_opener(NoRedirect()).open(request, timeout=30)
+        except urllib.error.HTTPError as exc:
+            if exc.code != 302:
+                raise FetchError("GitHub 资产 API 下载失败") from None
+            signed_url = exc.headers.get("Location", "")
+            signed = urllib.parse.urlparse(signed_url)
+            if (signed.scheme != "https" or not signed.hostname
+                    or not signed.hostname.endswith(".githubusercontent.com")):
+                raise FetchError("GitHub 资产 API 返回了无效的临时下载地址")
+            # 临时 URL 自带签名,绝不把 Authorization 转发给资产域名。
+            response = urllib.request.urlopen(urllib.request.Request(signed_url), timeout=60)
+        with response, dest.open("wb") as fh:
+            shutil.copyfileobj(response, fh, length=1024 * 1024)
+    except (OSError, urllib.error.URLError):
+        # 上游异常可能包含带签名参数的临时 URL,不暴露到终端或报告。
+        raise FetchError("GitHub Release 资产下载失败;请检查网络连接") from None
 
 
 def _safe_members(zf: zipfile.ZipFile) -> list[str]:

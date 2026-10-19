@@ -1,6 +1,9 @@
 """Task 4 Step 4: 模型下载器——未授权/未配置时拒绝,下载后逐文件 SHA256 校验,失败不落正式目录。"""
 import hashlib
+import io
 import json
+from email.message import Message
+from urllib.error import HTTPError
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -88,27 +91,46 @@ def test_wrong_file_hash_does_not_replace_target(tmp_path):
     assert not (out / "model.onnx").exists()
 
 
-def test_private_github_release_download_uses_gh_auth_without_token_in_command(
+def test_private_github_release_download_uses_signed_url_without_token_leak(
         tmp_path, monkeypatch):
     uri = ("https://github.com/Huang1Hx/EcomAgent/releases/download/"
            "classifier-v1/model.zip")
     dest = tmp_path / "bundle.zip"
     seen = []
 
+    api_asset = "https://api.github.com/repos/Huang1Hx/EcomAgent/releases/assets/123"
+    signed = "https://release-assets.githubusercontent.com/model.zip?signature=temporary"
+
     def fake_run(cmd, **kwargs):
         seen.append((cmd, kwargs))
-        (tmp_path / "model.zip").write_bytes(b"release-asset")
-        return SimpleNamespace(returncode=0)
+        if cmd[1:3] == ["api", "repos/Huang1Hx/EcomAgent/releases/tags/classifier-v1"]:
+            return SimpleNamespace(returncode=0, stdout=json.dumps({
+                "assets": [{"name": "model.zip", "url": api_asset}]}))
+        assert cmd == ["gh", "auth", "token"]
+        return SimpleNamespace(returncode=0, stdout="secret-token\n")
+
+    class RedirectOpener:
+        def open(self, request, timeout):
+            assert request.full_url == api_asset
+            assert request.get_header("Authorization") == "Bearer secret-token"
+            headers = Message()
+            headers["Location"] = signed
+            raise HTTPError(api_asset, 302, "Found", headers, None)
+
+    def fake_urlopen(request, timeout):
+        assert request.full_url == signed
+        assert request.get_header("Authorization") is None
+        return io.BytesIO(b"release-asset")
 
     monkeypatch.setattr(fetch_model.shutil, "which", lambda name: "/usr/bin/gh")
     monkeypatch.setattr(fetch_model.subprocess, "run", fake_run)
+    monkeypatch.setattr(fetch_model.urllib.request, "build_opener", lambda *a: RedirectOpener())
+    monkeypatch.setattr(fetch_model.urllib.request, "urlopen", fake_urlopen)
     fetch_model._download(uri, dest)
     assert dest.read_bytes() == b"release-asset"
-    cmd, kwargs = seen[0]
-    assert cmd == ["gh", "release", "download", "classifier-v1", "--repo",
-                   "Huang1Hx/EcomAgent", "--pattern", "model.zip", "--dir", str(tmp_path)]
-    assert kwargs["capture_output"] is True
-    assert "token" not in " ".join(cmd).lower()
+    assert len(seen) == 2
+    assert all(kwargs["capture_output"] for _, kwargs in seen)
+    assert "secret-token" not in " ".join(" ".join(cmd) for cmd, _ in seen)
 
 
 def test_private_github_release_download_failure_hides_cli_output(tmp_path, monkeypatch):

@@ -1,4 +1,4 @@
-# 17类旁路分类器：现有数据训练与本地恢复
+# 17类旁路分类器：现有数据训练与远程恢复
 
 分类器处理飞轮中已归并的问题；在线九类意图仍由对话主链处理。
 现有 `dataset/` 为 v1 数据：训练2594、验证161、测试161条。保留原划分和两条同标签训练重复记录。
@@ -30,8 +30,9 @@ make ch10-threshold-scan
 
 模型权重位于 `data/ch10/model/`，ONNX包位于 `data/ch10/onnx/`，均为本地忽略文件。
 包内的 `artifact-manifest.json` 校验权重、tokenizer、阈值和标签顺序。
-根目录 `data/ch10/artifact-manifest.json` 是可提交的ONNX发布清单；目前 `artifact_uri=null`，
-尚未发布远程下载地址。其他机器可按以上步骤重训，但不保证不同硬件的权重逐字节相同。
+根目录 `data/ch10/artifact-manifest.json` 是可提交的 ONNX 发布清单，固定私有
+GitHub Release 地址、归档 SHA256 和逐文件 SHA256。具备该私有仓库读取权限、已用
+`gh auth login` 登录的机器可直接恢复；无需重新训练。
 
 `make classifier-up` 先校验再启动，失败返回非零；`make classifier-down` 停止记录的服务进程。
 服务监听本地8110，健康接口返回数据/ONNX哈希与阈值。
@@ -54,32 +55,20 @@ RUN_CLASSIFIER_LIVE=1 uv run --group ml pytest -q tests/test_classifier_live.py
 
 ## 远程分发（Task 4 Step 4 / Task 5 Step 6）
 
-普通 Git 只提交代码、manifest 和报告；`data/ch10/model/`、`data/ch10/onnx/`（约 391 MB/份）
-继续被忽略。`data/ch10/artifact-manifest.json` 的 `artifact_uri` 目前仍为 `null`。
-**本仓库尚未配置已授权的对象存储/发布地址**，因此：
-
-- `make classifier-bootstrap` 会读取发布清单；`artifact_uri` 为空时以非零状态明确拒绝，
-  不会从公开 GitHub Release 或猜测地址下载，也不会把大文件放进普通 Git。
-- 获取存储授权后，把 ONNX 目录打成 zip，确保根目录扁平包含
-  `model.onnx`、`tokenizer.json`、`threshold.json`（可选 `tokenizer_config.json`），
-  在清单中填写 `artifact_uri`（https 或 file）与 `archive_sha256`，随后运行：
+普通 Git 只提交代码、manifest 和报告；`data/ch10/model/`、`data/ch10/onnx/`
+（未压缩约 409 MB）继续被忽略。模型归档放在当前**私有**仓库的固定版本 Release，
+不是公开地址；清单中的 SHA256 与 Release 资产摘要一致。新环境先安装 GitHub CLI，
+以具有本仓库读取权限的账号执行 `gh auth login`；再在仓库根目录运行：
 
 ```bash
+uv sync --frozen --group ml
 make classifier-bootstrap
 make classifier-up
+curl -fsS http://127.0.0.1:8110/healthz
 ```
 
-下载器先落临时文件，校验归档 SHA256 与逐文件 SHA256 后原子替换
+下载器用 `gh` 的当前登录态下载私有 Release 资产，不把令牌写入项目清单或命令行。
+它先落临时文件，校验归档 SHA256 与逐文件 SHA256 后原子替换
 `data/ch10/onnx/`；目标目录已有完整且一致的本地产物时直接跳过，
 已有不完整/不同版本产物时拒绝覆盖。下载失败不会留下半包，原目录保持不变。
-空目录下载路径已用独立临时目录 + `file://` 归档验证：SHA 错误、坏 zip、清单外文件
-都不会替换目标目录；`artifact_uri=null` 时 `make classifier-bootstrap` 非零退出。
-
-**当前状态：远程真实下载与空环境启动为阻塞项。** 原因是没有已授权的对象存储/发布
-目标，清单里没有可下载地址，而不是下载代码缺失。没有存储授权前，不要上传到公开
-GitHub Release，也不要把模型包提交进普通 Git。解除阻塞需要选择并授权一个存储位置
-（对象存储桶、内网制品库等），再把归档地址和 `archive_sha256` 写进清单。
-
-在获得授权前，另一台机器的可用恢复方式是：复制本机完整的 `data/ch10/onnx/`
-（约 409 MB）到相同相对路径，安装依赖后运行 `make classifier-up`；启动前仍会逐文件
-校验 SHA256。该方式依赖人工拷贝，不算干净环境验收。
+私有仓库访问被拒或未登录 `gh` 时命令非零退出；这属于权限前提，不会回退到训练。

@@ -26,13 +26,14 @@ make dev                  # 依赖容器 + MCP :8101/:8102 + 应用 :8000
 
 `make help` 可以查看带说明的常用命令及部分依赖提示；启动失败时先确认 `.env`、Docker 服务和模型上游配置。
 
-主题分类器可使用现有 `dataset/` 训练：`uv sync --frozen --group ml` 后依次执行
-`make ch10-train`、`make ch10-eval`、`make ch10-export`、`make classifier-up`。
+主题分类器已有私有 ONNX 发布包。具备本仓库 GitHub 读取权限并登录 `gh` 后，
+运行 `uv sync --frozen --group ml && make classifier-bootstrap && make classifier-up`，
+无需重新训练。需要从现有 `dataset/` 重新训练时，才运行 `make ch10-train`、
+`make ch10-eval`、`make ch10-export`。
 数据版本、模型位置与验收方式见 [分类器训练与恢复](docs/classifier-artifacts.md)。
 
-模型包（约 409 MB）不进普通 Git，发布清单里的 `artifact_uri` 目前为空；
-远程下载与空环境启动因此仍未验收，授权存储后可用 `make classifier-bootstrap`。
-在此之前，另一台机器需手工复制完整的 `data/ch10/onnx/` 再启动。
+模型包（未压缩约 409 MB）不进普通 Git；发布清单固定私有 Release 地址和 SHA256。
+无仓库读取权限或未登录 `gh` 时，远程恢复会明确失败，不会自动重训。
 
 ## 代码怎么组织
 
