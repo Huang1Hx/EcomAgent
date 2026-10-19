@@ -69,6 +69,23 @@ def test_download_verifies_and_writes_then_reuses(tmp_path):
     assert fetch_model.fetch(manifest_path, out) == "present"
 
 
+@pytest.mark.parametrize("changed_field,value", [
+    ("kind", "torch"),
+    ("dataset", {"version": "different-dataset"}),
+])
+def test_existing_bundle_with_metadata_drift_is_not_reused(tmp_path, changed_field, value):
+    _, release, manifest_path = _bundle(tmp_path)
+    out = tmp_path / "onnx"
+    assert fetch_model.fetch(manifest_path, out) == "downloaded"
+    local_path = out / "artifact-manifest.json"
+    local = json.loads(local_path.read_text(encoding="utf-8"))
+    local[changed_field] = value
+    local_path.write_text(json.dumps(local), encoding="utf-8")
+    assert fetch_model.status(out, release) == "invalid"
+    with pytest.raises(fetch_model.FetchError, match="不同版本"):
+        fetch_model.fetch(manifest_path, out)
+
+
 def test_corrupt_archive_fails_and_keeps_target_absent(tmp_path):
     archive, _, manifest_path = _bundle(tmp_path)
     archive.write_bytes(b"not a zip")
@@ -89,6 +106,17 @@ def test_wrong_file_hash_does_not_replace_target(tmp_path):
         fetch_model.install_from_archive(archive, manifest, out)
     assert (out / "keep.txt").read_text(encoding="utf-8") == "local"
     assert not (out / "model.onnx").exists()
+
+
+def test_archive_rejects_directory_entries_even_when_empty(tmp_path):
+    archive, manifest, _ = _bundle(tmp_path)
+    with zipfile.ZipFile(archive, "a") as z:
+        z.writestr("nested/", "")
+    manifest["archive_sha256"] = hashlib.sha256(archive.read_bytes()).hexdigest()
+    out = tmp_path / "onnx"
+    with pytest.raises(fetch_model.FetchError, match="目录"):
+        fetch_model.install_from_archive(archive, manifest, out)
+    assert not out.exists()
 
 
 def test_private_github_release_download_uses_signed_url_without_token_leak(

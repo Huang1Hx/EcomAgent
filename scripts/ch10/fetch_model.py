@@ -9,7 +9,6 @@
 - 只接受归档根目录下的扁平文件名,拒绝路径穿越、子目录和多余文件。
 
 用法:
-  PYTHONPATH=. uv run python -m scripts.ch10.fetch_model --mesh  # 预留拼写陷阱不计
   PYTHONPATH=. uv run python -m scripts.ch10.fetch_model --manifest data/ch10/artifact-manifest.json
   PYTHONPATH=. uv run python -m scripts.ch10.fetch_model --manifest ... --check-only
   make classifier-bootstrap
@@ -45,7 +44,12 @@ def sha256(path: Path) -> str:
 
 
 def _same(a: dict, b: dict) -> bool:
-    return a.get("files") == b.get("files") and a.get("labels") == b.get("labels")
+    """复用要求完整模型身份相同；仅下载位置和归档哈希不是包内身份。"""
+    if not isinstance(a, dict) or not isinstance(b, dict):
+        return False
+    transport_fields = {"artifact_uri", "archive_sha256"}
+    return ({key: value for key, value in a.items() if key not in transport_fields}
+            == {key: value for key, value in b.items() if key not in transport_fields})
 
 
 def status(out: Path = OUT, manifest: dict | None = None) -> str:
@@ -63,7 +67,7 @@ def status(out: Path = OUT, manifest: dict | None = None) -> str:
         if manifest is not None and not _same(local, manifest):
             return "invalid"
         return "present"
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return "invalid"
 
 
@@ -162,7 +166,7 @@ def _safe_members(zf: zipfile.ZipFile) -> list[str]:
     names = []
     for info in zf.infolist():
         if info.is_dir():
-            continue
+            raise FetchError(f"归档包含目录条目:{info.filename}")
         name = info.filename
         if "/" in name or "\\" in name or Path(name).name != name or name.startswith("."):
             raise FetchError(f"归档包含不安全路径:{name}")
